@@ -5,9 +5,8 @@
 #endif
 
 module OPR_FILTERS
-    use TLab_Constants, only: wp, wi, MAX_PARS
+    use TLab_Constants, only: wp, wi, MAX_PARS, MAX_VARS
     use FDM, only: grid_dt
-    use TLab_Types, only: filter_dt
     use TLAB_VARS, only: isize_txc_field, isize_txc_dimz
     use TLab_Arrays, only: wrk1d, wrk2d, wrk3d
     use TLab_WorkFlow, only: TLab_Write_ASCII, TLab_Stop
@@ -18,11 +17,29 @@ module OPR_FILTERS
     use OPR_PARTIAL
     use OPR_ELLIPTIC
 #ifdef USE_MPI
-    use TLabMPI_VARS
-    use TLabMPI_PROCS
+    use TLabMPI_VARS, only: ims_npro_i, ims_npro_k, ims_offset_i, ims_offset_k
+    use TLabMPI_Transpose
 #endif
     implicit none
     private
+
+    type, public :: filter_dt
+        sequence
+        integer type, ipadding
+        integer(wi) size, inb_filter
+        logical uniform, periodic, lpadding(2)
+        real(wp) parameters(MAX_PARS)
+        integer BcsMin, BcsMax                  ! boundary conditions
+        integer repeat
+        integer mpitype
+        real(wp), allocatable :: coeffs(:, :)    ! filted coefficients
+    end type filter_dt
+
+    type(filter_dt), public :: FilterDomain(3)
+    logical, public :: FilterDomainActive(MAX_VARS)
+    integer, public :: FilterDomainBcsFlow(MAX_VARS), FilterDomainBcsScal(MAX_VARS)
+
+    type(filter_dt), public :: PressureFilter(3)
 
     public :: FILTER_READBLOCK, OPR_FILTER_INITIALIZE
     public :: OPR_FILTER
@@ -171,8 +188,8 @@ contains
         end do
 
 #ifdef USE_MPI
-        variable(1)%mpitype = TLabMPI_I_PARTIAL
-        variable(3)%mpitype = TLabMPI_K_PARTIAL
+        variable(1)%mpitype = TLAB_MPI_TRP_I_PARTIAL
+        variable(3)%mpitype = TLAB_MPI_TRP_K_PARTIAL
 #endif
 
         return
@@ -416,7 +433,7 @@ contains
 
         !###################################################################
 #ifdef USE_MPI
-        id = f%mpitype  !TLabMPI_I_PARTIAL
+        id = f%mpitype  !TLAB_MPI_TRP_I_PARTIAL
 #endif
 
         !-------------------------------------------------------------------
@@ -424,10 +441,11 @@ contains
         !-------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_i > 1) then
-            call TLabMPI_TRPF_I(u, wrk3d, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            call TLabMPI_TransposeI_Forward(u, wrk3d, id)
             p_a => wrk3d
             p_b => u
-            nyz = ims_size_i(id)
+            ! nyz = ims_size_i(id)
+            nyz = ims_trp_plan_i(id)%nlines
         else
 #endif
             p_a => u
@@ -464,7 +482,7 @@ contains
         !-------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_i > 1) then
-            call TLabMPI_TRPB_I(p_b, p_a, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            call TLabMPI_TransposeI_Backward(p_b, p_a, id)
         end if
 #endif
 
@@ -549,7 +567,7 @@ contains
 
         !###################################################################
 #ifdef USE_MPI
-        id = f%mpitype  !TLabMPI_K_PARTIAL
+        id = f%mpitype  !TLAB_MPI_TRP_K_PARTIAL
 #endif
 
         !-------------------------------------------------------------------
@@ -557,10 +575,11 @@ contains
         !-------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_k > 1) then
-            call TLabMPI_TRPF_K(u, wrk3d, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            call TLabMPI_TransposeK_Forward(u, wrk3d, id)
             p_a => wrk3d
             p_b => u
-            nxy = ims_size_k(id)
+            ! nxy = ims_size_k(id)
+            nxy = ims_trp_plan_k(id)%nlines
         else
 #endif
             p_a => u
@@ -579,7 +598,7 @@ contains
         !-------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_k > 1) then
-            call TLabMPI_TRPB_K(p_b, p_a, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            call TLabMPI_TransposeK_Backward(p_b, p_a, id)
         end if
 #endif
 

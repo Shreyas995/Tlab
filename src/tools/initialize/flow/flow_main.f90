@@ -6,8 +6,8 @@
 program INIFLOW
     use TLab_Constants, only: wp, wi
     use TLab_Constants, only: ifile, gfile, lfile, efile, wfile, tag_flow, tag_scal
-    use TLAB_VARS, only: stagger_on, fourier_on
-    use TLAB_VARS, only: imode_eqns, PressureFilter
+    use TLAB_VARS, only: fourier_on
+    use TLAB_VARS, only: imode_eqns
     use TLAB_VARS, only: imax, jmax, kmax, isize_field
     use TLAB_VARS, only: inb_flow, inb_scal
     use TLAB_VARS, only: itime, rtime
@@ -16,16 +16,20 @@ program INIFLOW
     use TLab_WorkFlow, only: TLab_Write_ASCII, TLab_Stop, TLab_Start
     use TLab_Memory, only: TLab_Initialize_Memory
 #ifdef USE_MPI
-    use MPI
-    use TLabMPI_PROCS
+    use TLabMPI_PROCS, only: TLabMPI_Initialize
+    use TLabMPI_Transpose, only: TLabMPI_Transpose_Initialize
 #endif
     use FDM, only: g, FDM_Initialize
     use Thermodynamics, only: imixture, Thermodynamics_Initialize_Parameters
+    use Gravity, only: Gravity_Initialize
+    use LargeScaleForcing, only: LargeScaleForcing_Initialize
+    use TLab_Background, only: TLab_Initialize_Background
     use THERMO_THERMAL
     use THERMO_CALORIC
     use IO_FIELDS
-    use OPR_Elliptic
     use OPR_FOURIER
+    use OPR_Burgers, only: OPR_Burgers_Initialize
+    use OPR_Elliptic, only: OPR_Elliptic_Initialize
     use FLOW_LOCAL
     use FLOW_MEAN
 
@@ -36,10 +40,13 @@ program INIFLOW
 
     call TLab_Initialize_Parameters(ifile)
 #ifdef USE_MPI
-    call TLabMPI_Initialize()
+    call TLabMPI_Initialize(ifile)
+    call TLabMPI_Transpose_Initialize(ifile)
 #endif
     call NavierStokes_Initialize_Parameters(ifile)
     call Thermodynamics_Initialize_Parameters(ifile)
+    call Gravity_Initialize(ifile)
+    call LargeScaleForcing_Initialize(ifile)
 
     call Iniflow_Initialize_Parameters(ifile)
 
@@ -50,17 +57,10 @@ program INIFLOW
     call FDM_Initialize(y, g(2), wrk1d(:, 2), wrk1d(:, 4))
     call FDM_Initialize(z, g(3), wrk1d(:, 3), wrk1d(:, 4))
 
-    call TLab_Initialize_Background()
+    call TLab_Initialize_Background(ifile)
     if (IniK%relative) IniK%ymean = g(2)%nodes(1) + g(2)%scale*IniK%ymean_rel
 
-    ! Staggering of the pressure grid not implemented here
-    if (stagger_on) then
-        call TLab_Write_ASCII(wfile, C_FILE_LOC//'. Staggering of the pressure grid not yet implemented.')
-        stagger_on = .false. ! turn staggering off for OPR_Poisson_FourierXZ_Factorize(...)
-    end if
-    if (any(PressureFilter%type /= DNS_FILTER_NONE)) then
-        call TLab_Write_ASCII(wfile, C_FILE_LOC//'. Pressure and dpdy Filter not implemented here.')
-    end if
+    call OPR_Burgers_Initialize(ifile)
 
     if (flag_u /= 0) then ! Initialize Poisson Solver
         call OPR_Elliptic_Initialize(ifile)

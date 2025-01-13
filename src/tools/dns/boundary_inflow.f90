@@ -8,8 +8,6 @@
 !#
 !########################################################################
 module BOUNDARY_INFLOW
-    use TLab_Types, only: filter_dt
-    use TLab_Types, only: discrete_dt
     use FDM, only: grid_dt
     use TLab_Constants, only: efile, lfile, wp, wi
 #ifdef TRACE_ON
@@ -19,10 +17,12 @@ module BOUNDARY_INFLOW
     use TLAB_VARS, only: imode_eqns
     use FDM, only: g, FDM_Initialize
     use TLAB_VARS, only: rtime, itime
-    use TLAB_VARS, only: visc, damkohler, qbg
+    use TLAB_VARS, only: visc, damkohler
+    use TLab_Background, only: qbg
     use TLab_Arrays, only: wrk1d, wrk2d, wrk3d
     use TLab_WorkFlow, only: TLab_Write_ASCII, TLab_Stop
     use Thermodynamics, only: imixture, itransport
+    use Discrete, only: discrete_dt
     use THERMO_THERMAL
     use THERMO_CALORIC
     use THERMO_AIRWATER
@@ -31,10 +31,9 @@ module BOUNDARY_INFLOW
     use OPR_FILTERS
 #ifdef USE_MPI
     use TLabMPI_VARS, only: ims_npro_i, ims_npro_k
-    use TLabMPI_VARS, only: ims_size_i, ims_ds_i, ims_dr_i, ims_ts_i, ims_tr_i
-    use TLabMPI_VARS, only: ims_size_k, ims_ds_k, ims_dr_k, ims_ts_k, ims_tr_k
     use TLabMPI_VARS, only: ims_offset_k
-    use TLabMPI_PROCS
+    use TLabMPI_PROCS, only: TLabMPI_Panic
+    use TLabMPI_Transpose
 #endif
     use OPR_PARTIAL
 
@@ -114,11 +113,11 @@ contains
         ! #######################################################################
 #ifdef USE_MPI
         if (FilterInflow(1)%type /= DNS_FILTER_NONE) then !  Required for inflow explicit filter
-            call TLab_Write_ASCII(lfile, 'Initialize MPI types for inflow filter.')
-            id = TLabMPI_K_INFLOW
+            ! call TLab_Write_ASCII(lfile, 'Initialize MPI types for inflow filter.')
+            ! id = TLAB_MPI_TRP_K_INFLOW
             isize_loc = FilterInflow(1)%size*FilterInflow(2)%size
-            call TLabMPI_TYPE_K(ims_npro_k, kmax, isize_loc, 1, 1, 1, 1, &
-                                ims_size_k(id), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            ! call TLabMPI_TypeK_Create(ims_npro_k, kmax, isize_loc, 1, 1, 1, 1,  id)
+            ims_trp_plan_k(TLAB_MPI_TRP_K_INFLOW) = TLabMPI_Trp_TypeK_Create_Devel(kmax, isize_loc, 1, 1, 1, 1, 'inflow filter.')
             FilterInflow(3)%mpitype = id
         end if
 #endif
@@ -322,9 +321,8 @@ contains
     !########################################################################
     !########################################################################
     subroutine BOUNDARY_INFLOW_DISCRETE(etime, inf_rhs)
-        use TLab_Types, only: profiles_dt
+        use Profiles, only: profiles_dt, Profiles_Calculate, PROFILE_GAUSSIAN, PROFILE_GAUSSIAN_SYM, PROFILE_GAUSSIAN_ANTISYM
         use TLab_Constants, only: pi_wp
-        use Profiles
 
         real(wp) etime
         real(wp), intent(OUT) :: inf_rhs(jmax, kmax, inb_flow + inb_scal)
@@ -489,7 +487,7 @@ contains
         ifltmx = imx - 1 + 1
         jfltmx = jmx - j1 + 1
 
-        if (imode_eqns == DNS_EQNS_TOTAL .or. imode_eqns == DNS_EQNS_INTERNAL) then
+        if (any([DNS_EQNS_TOTAL, DNS_EQNS_INTERNAL] == imode_eqns)) then
             iq_loc = (/5, 1, 2, 3, 6/) ! Filtered variables: rho, u,v,w, p
         else
             iq_loc = (/1, 2, 3/)

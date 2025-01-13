@@ -20,16 +20,19 @@ program VISUALS
 #ifdef USE_MPI
     use MPI
     use TLabMPI_VARS, only: ims_pro, ims_pro_i, ims_pro_k, ims_comm_x, ims_comm_z
-    use TLabMPI_PROCS
+    use TLabMPI_PROCS, only: TLabMPI_Initialize
+    use TLabMPI_Transpose, only: TLabMPI_Transpose_Initialize
 #endif
-    use FDM, only: g,  FDM_Initialize
-    use FI_SOURCES, only: bbackground, FI_BUOYANCY, FI_BUOYANCY_SOURCE
+    use FDM, only: g, FDM_Initialize
+    use TLab_Background, only: TLab_Initialize_Background
+    use Gravity, only: Gravity_Initialize, buoyancy, bbackground, Gravity_Buoyancy, Gravity_Buoyancy_Source
     use Thermodynamics, only: imixture, NSP, THERMO_SPNAME, Thermodynamics_Initialize_Parameters
     use THERMO_ANELASTIC
     use THERMO_AIRWATER
     use Radiation
     use Microphysics
     use Chemistry
+    use LargeScaleForcing, only: LargeScaleForcing_Initialize
     use PARTICLE_VARS
     use PARTICLE_ARRAYS
     use PARTICLE_PROCS
@@ -40,9 +43,10 @@ program VISUALS
     use FI_GRADIENT_EQN
     use FI_VORTICITY_EQN
     use FI_TOTAL_STRESS
-    use OPR_FOURIER
     use OPR_PARTIAL
+    use OPR_FOURIER
     use OPR_FILTERS
+    use OPR_Burgers, only: OPR_Burgers_Initialize
     use OPR_ELLIPTIC
 
     implicit none
@@ -98,28 +102,32 @@ program VISUALS
 
     call TLab_Initialize_Parameters(ifile)
 #ifdef USE_MPI
-    call TLabMPI_Initialize()
+    call TLabMPI_Initialize(ifile)
+    call TLabMPI_Transpose_Initialize(ifile)
 #endif
     call Particle_Initialize_Parameters(ifile)
 
     call NavierStokes_Initialize_Parameters(ifile)
     call Thermodynamics_Initialize_Parameters(ifile)
+    call Gravity_Initialize(ifile)
     call Radiation_Initialize(ifile)
     call Microphysics_Initialize(ifile)
+    call LargeScaleForcing_Initialize(ifile)
     call Chemistry_Initialize(ifile)
     call Particle_Initialize_Parameters(ifile)
+
     ! -------------------------------------------------------------------
     ! Read from tlab.ini
     ! -------------------------------------------------------------------
     call ScanFile_Char(bakfile, ifile, 'PostProcessing', 'PressureDecomposition', 'total', sRes)
-    if ( TRIM(ADJUSTL(sRes)) == '' )  then; pdecomp = DCMP_TOTAL
-    else if ( TRIM(ADJUSTL(sRes)) == 'total'    ) then; pdecomp = DCMP_TOTAL 
-    else if ( TRIM(ADJUSTL(sRes)) == 'resolved' ) then; pdecomp = DCMP_RESOLVED
-    else if ( TRIM(ADJUSTL(sRes)) == 'advection') then; pdecomp = DCMP_ADVECTION
-    else if ( TRIM(ADJUSTL(sRes)) == 'advdiff'  ) then; pdecomp = DCMP_ADVDIFF 
-    else if ( TRIM(ADJUSTL(sRes)) == 'diffusion') then; pdecomp = DCMP_DIFFUSION
-    else if ( TRIM(ADJUSTL(sRes)) == 'coriolis' ) then; pdecomp = DCMP_CORIOLIS
-    else if ( TRIM(ADJUSTL(sRes)) == 'buoyancy' ) then; pdecomp = DCMP_BUOYANCY
+    if (TRIM(ADJUSTL(sRes)) == '') then; pdecomp = DCMP_TOTAL
+    else if (TRIM(ADJUSTL(sRes)) == 'total') then; pdecomp = DCMP_TOTAL
+    else if (TRIM(ADJUSTL(sRes)) == 'resolved') then; pdecomp = DCMP_RESOLVED
+    else if (TRIM(ADJUSTL(sRes)) == 'advection') then; pdecomp = DCMP_ADVECTION
+    else if (TRIM(ADJUSTL(sRes)) == 'advdiff') then; pdecomp = DCMP_ADVDIFF
+    else if (TRIM(ADJUSTL(sRes)) == 'diffusion') then; pdecomp = DCMP_DIFFUSION
+    else if (TRIM(ADJUSTL(sRes)) == 'coriolis') then; pdecomp = DCMP_CORIOLIS
+    else if (TRIM(ADJUSTL(sRes)) == 'buoyancy') then; pdecomp = DCMP_BUOYANCY
     else
         call TLAB_WRITE_ASCII(efile, C_FILE_LOC//'. VISUALS. Wrong Pressure decomposition option.')
         call TLAB_STOP(DNS_ERROR_PRESSURE_DECOMPOSITION)
@@ -338,14 +346,16 @@ program VISUALS
     ! -------------------------------------------------------------------
     ! Initialize
     ! -------------------------------------------------------------------
-    call IO_READ_GRID(gfile, g(1)%size, g(2)%size, g(3)%size, g(1)%scale, g(2)%scale, g(3)%scale, wrk1d(:,1), wrk1d(:,2), wrk1d(:,3))
-    call FDM_Initialize(x, g(1), wrk1d(:,1), wrk1d(:,4))
-    call FDM_Initialize(y, g(2), wrk1d(:,2), wrk1d(:,4))
-    call FDM_Initialize(z, g(3), wrk1d(:,3), wrk1d(:,4))
+    call IO_READ_GRID(gfile, g(1)%size, g(2)%size, g(3)%size, g(1)%scale, g(2)%scale, g(3)%scale, wrk1d(:, 1), wrk1d(:, 2), wrk1d(:, 3))
+    call FDM_Initialize(x, g(1), wrk1d(:, 1), wrk1d(:, 4))
+    call FDM_Initialize(y, g(2), wrk1d(:, 2), wrk1d(:, 4))
+    call FDM_Initialize(z, g(3), wrk1d(:, 3), wrk1d(:, 4))
+
+    call TLab_Initialize_Background(ifile)
+
+    call OPR_Burgers_Initialize(ifile)
 
     call OPR_Elliptic_Initialize(ifile)
-
-    call TLab_Initialize_Background() ! Initialize thermodynamic quantities
 
     if (fourier_on .and. inb_txc >= 1) then ! For Poisson solver
         call OPR_FOURIER_INITIALIZE()
@@ -493,7 +503,7 @@ program VISUALS
                         call THERMO_ANELASTIC_DENSITY(imax, jmax, kmax, s, txc(1, 1))
                     else
                         wrk1d(1:jmax, 1) = 0.0_wp
-                        call FI_BUOYANCY(buoyancy, imax, jmax, kmax, s, txc(1, 1), wrk1d)
+                        call Gravity_Buoyancy(buoyancy, imax, jmax, kmax, s, txc(1, 1), wrk1d)
                         dummy = 1.0_wp/froude
                         txc(1:isize_field, 1) = txc(1:isize_field, 1)*dummy + 1.0_wp
                     end if
@@ -524,7 +534,7 @@ program VISUALS
                         pdecomp = DCMP_BUOYANCY
                         call FI_PRESSURE_BOUSSINESQ(q, s, txc(1, 1), txc(1, 2), txc(1, 3), txc(1, 4), pdecomp)
                         call IO_WRITE_VISUALS(plot_file, opt_format, imax, jmax, kmax, i1, subdomain, txc(1, 1), wrk3d)
-                        
+
                         plot_file = 'PressureDiffusion'//time_str(1:MaskSize)
                         pdecomp = DCMP_DIFFUSION
                         call FI_PRESSURE_BOUSSINESQ(q, s, txc(1, 1), txc(1, 2), txc(1, 3), txc(1, 4), pdecomp)
@@ -546,7 +556,7 @@ program VISUALS
                         call IO_WRITE_VISUALS(plot_file, opt_format, imax, jmax, kmax, i1, subdomain, txc(1, 1), wrk3d)
 
                     end if
-                    
+
                     plot_file = 'Pressure'//time_str(1:MaskSize)
                     call FI_PRESSURE_BOUSSINESQ(q, s, txc(1, 1), txc(1, 2), txc(1, 3), txc(1, 4), DCMP_TOTAL)
                     call IO_WRITE_VISUALS(plot_file, opt_format, imax, jmax, kmax, i1, subdomain, txc(1, 1), wrk3d)
@@ -721,7 +731,7 @@ program VISUALS
                     call THERMO_ANELASTIC_BUOYANCY(imax, jmax, kmax, s, txc(1, 4))
                 else
                     wrk1d(1:jmax, 1) = 0.0_wp
-                    call FI_BUOYANCY(buoyancy, imax, jmax, kmax, s, txc(1, 4), wrk1d)
+                    call Gravity_Buoyancy(buoyancy, imax, jmax, kmax, s, txc(1, 4), wrk1d)
                 end if
                 dummy = 1.0_wp/froude
                 txc(1:isize_field, 4) = txc(1:isize_field, 4)*dummy
@@ -834,7 +844,7 @@ program VISUALS
                     call THERMO_ANELASTIC_BUOYANCY(imax, jmax, kmax, s, txc(1, 1))
                 else
                     wrk1d(1:jmax, 1) = 0.0_wp
-                    call FI_BUOYANCY(buoyancy, imax, jmax, kmax, s, txc(1, 1), wrk1d)
+                    call Gravity_Buoyancy(buoyancy, imax, jmax, kmax, s, txc(1, 1), wrk1d)
                 end if
                 dummy = 1.0_wp/froude
                 txc(1:isize_field, 1) = txc(1:isize_field, 1)*dummy
@@ -861,7 +871,7 @@ program VISUALS
                     txc(1:isize_field, 2) = txc(1:isize_field, 2)*txc(1:isize_field, 3)*dummy
                 else
                     call FI_GRADIENT(imax, jmax, kmax, s, txc(1, 1), txc(1, 2))
-                    call FI_BUOYANCY_SOURCE(buoyancy, imax, jmax, kmax, s, txc(1, 1), txc(1, 2))
+                    call Gravity_Buoyancy_Source(buoyancy, imax, jmax, kmax, s, txc(1, 1), txc(1, 2))
                 end if
                 dummy = visc/schmidt(1)/froude
                 txc(1:isize_field, 1) = txc(1:isize_field, 2)*dummy
@@ -966,7 +976,7 @@ program VISUALS
                     call THERMO_ANELASTIC_BUOYANCY(imax, jmax, kmax, s, txc(1, 1))
                 else
                     wrk1d(1:jmax, 1) = 0.0_wp
-                    call FI_BUOYANCY(buoyancy, imax, jmax, kmax, s, txc(1, 1), wrk1d)
+                    call Gravity_Buoyancy(buoyancy, imax, jmax, kmax, s, txc(1, 1), wrk1d)
                 end if
                 dummy = 1.0_wp/froude
                 txc(1:isize_field, 1) = txc(1:isize_field, 1)*dummy
@@ -1215,11 +1225,8 @@ contains
     subroutine ENSIGHT_FIELD(name, iheader, nx, ny, nz, nfield, subdomain, field, tmp_mpi)
         use TLab_Constants, only: wp, wi
 #ifdef USE_MPI
-        use TLabMPI_VARS, only: ims_pro
-        use TLabMPI_PROCS
+        use IO_FIELDS, only: TLabMPI_WRITE_PE0_SINGLE
 #endif
-
-        implicit none
 
         character*(*) name
         integer(wi), intent(IN) :: iheader ! 0 no header; 1 header

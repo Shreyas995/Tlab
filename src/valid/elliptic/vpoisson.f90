@@ -16,13 +16,17 @@ program VPOISSON
     use TLab_Arrays
 #ifdef USE_MPI
     use MPI
-    use TLabMPI_PROCS
+    use TLabMPI_PROCS, only: TLabMPI_Initialize
+    use TLabMPI_PROCS, only: TLabMPI_Initialize
+use TLabMPI_Transpose, only: TLabMPI_Transpose_Initialize
 #endif
     use FDM, only: g,  FDM_Initialize
+    use Tlab_Background, only: TLab_Initialize_Background
     use IO_FIELDS
-    use OPR_FILTERS
-    use OPR_FOURIER
     use OPR_PARTIAL
+    use OPR_FOURIER
+    use OPR_FILTERS
+    use OPR_Burgers, only: OPR_Burgers_Initialize
     use OPR_ELLIPTIC
     use Averages
 
@@ -33,7 +37,7 @@ program VPOISSON
     real(wp) mean, lambda
     ! real(wp) Int_Simpson, delta
 
-    integer(wi) i, j, k, ig, bcs(2, 2)
+    integer(wi) i, j, k, bcs(2, 2)
     integer(wi) type_of_operator, type_of_problem
     integer ibc
 
@@ -42,7 +46,8 @@ program VPOISSON
 
     call TLab_Initialize_Parameters(ifile)
 #ifdef USE_MPI
-    call TLabMPI_Initialize()
+    call TLabMPI_Initialize(ifile)
+call TLabMPI_Transpose_Initialize(ifile)
 #endif
     call NavierStokes_Initialize_Parameters(ifile)
 
@@ -64,6 +69,10 @@ program VPOISSON
     call FDM_Initialize(y, g(2), wrk1d(:,2), wrk1d(:,4))
     call FDM_Initialize(z, g(3), wrk1d(:,3), wrk1d(:,4))
 
+    call TLab_Initialize_Background(ifile)
+
+    call OPR_Burgers_Initialize(ifile)
+
     call OPR_Elliptic_Initialize(ifile)
 
 ! Staggering of the pressure grid not implemented here
@@ -79,10 +88,6 @@ program VPOISSON
 
     call OPR_FOURIER_INITIALIZE()
     call OPR_CHECK()
-
-    do ig = 1, 3
-        call OPR_FILTER_INITIALIZE(g(ig), Dealiasing(ig))
-    end do
 
     type_of_operator = 1   ! Poisson routines
     ! type_of_operator = 2   ! Helmholtz routines

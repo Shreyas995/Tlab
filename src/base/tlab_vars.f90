@@ -1,5 +1,5 @@
 module TLAB_VARS
-    use TLab_Types, only: filter_dt, term_dt, profiles_dt
+    use TLab_Types, only: term_dt
     use TLab_Constants, only: MAX_VARS, wp, wi, sp
     implicit none
     save
@@ -8,15 +8,13 @@ module TLAB_VARS
 ! General options
 ! ###################################################################
     integer :: imode_sim                ! type of simulation (spatial, temporal)
-    integer :: imode_files              ! files format
-    integer :: imode_precision_files    ! whether restart files in single or double precision
-    integer :: imode_verbosity = 1      ! level of verbosity used in log files
 
     logical :: flow_on = .true.         ! calculate flow parts of the code
     logical :: scal_on = .true.         ! calculate scal parts of the code
     logical :: fourier_on = .false.     ! using FFT libraries
     logical :: stagger_on = .false.     ! horizontal staggering of pressure
 
+    ! info about Navier-Stokes
     integer :: imode_eqns                       ! set of equations to be solved: internal energy, total energy, anelastic, Boussinesq
     integer :: iadvection, iviscous, idiffusion ! formulation of the Burgers operator
 
@@ -45,18 +43,9 @@ module TLAB_VARS
     integer(wi) :: isize_txc_dimx, isize_txc_dimz   ! partition for MPI data transposition
 
 ! ###################################################################
-! information to set up bcs, ics, and reference background profiles
-! ###################################################################
-    type(profiles_dt) :: qbg(3)                     ! Velocity
-    type(profiles_dt) :: sbg(MAX_VARS)              ! Scalars
-    type(profiles_dt) :: pbg, rbg, tbg, hbg         ! Pressure, density, temperature, enthalpy
-
-! ###################################################################
 ! phenomena in addition to the navier-stokes equations
 ! ###################################################################
-    type(term_dt) :: buoyancy                       ! Buoyancy parameters
     type(term_dt) :: coriolis                       ! Coriolis parameters
-    type(term_dt) :: subsidence                     ! Large-scale parameters
 
 ! ###################################################################
 ! Nondimensional numbers
@@ -69,31 +58,4 @@ module TLAB_VARS
     real(wp) :: stokes                              ! particle inertial effects
     real(wp) :: settling                            ! sedimentation effects
 
-! ###########################################################
-! Filters
-! ###########################################################
-    type(filter_dt) :: FilterDomain(3)
-    logical :: FilterDomainActive(MAX_VARS)
-    integer :: FilterDomainBcsFlow(MAX_VARS), FilterDomainBcsScal(MAX_VARS)
-
-    type(filter_dt) :: Dealiasing(3)
-    type(filter_dt) :: PressureFilter(3)
-
 end module TLAB_VARS
-
-! ###################################################################
-! Jet Statistic
-! ###################################################################
-module TLab_Spatial
-    use TLab_Types, only: wp
-    implicit none
-    save
-
-    integer, parameter :: MAX_STATS_SPATIAL = 100 ! Running statistics
-
-    integer :: nstatavg, statavg(MAX_STATS_SPATIAL) ! Ox planes at which to accumulate statistics
-    integer :: nstatavg_points                      ! number of accumulated points
-    integer :: istattimeorg                         ! time at which accumulation of statistics started
-    real(wp) :: rstattimeorg
-
-end module TLab_Spatial

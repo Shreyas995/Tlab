@@ -125,7 +125,7 @@ PROGRAM VMPI
        i1, i1, i1, i1, mip, nip(1,1), nloc(1), ndisp(1,1), mdisp(1,1), &
        tfsend(1,1), tfrecv(1,1))
 
-  CALL TLabMPI_TAGRESET
+  CALL TLabMPI_TagReset
 
 ! ###################################################################
   q(:,:)  = C_0_R; h(:,:)   = C_0_R
@@ -144,28 +144,28 @@ PROGRAM VMPI
      ENDIF
 
      DO is = 1,is_max
-        CALL TLabMPI_TRPF_K(u, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPB_K(wrk3d, u, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPF_K(u, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPB_K(wrk3d, u, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Forward(u, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Backward(wrk3d, u, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Forward(u, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Backward(wrk3d, u, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
 
-        CALL TLabMPI_TRPF_K(v, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPB_K(wrk3d, v, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPF_K(v, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPB_K(wrk3d, v, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Forward(v, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Backward(wrk3d, v, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Forward(v, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Backward(wrk3d, v, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
 
-        CALL TLabMPI_TRPF_K(w, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPB_K(wrk3d, w, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPF_K(w, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPB_K(wrk3d, w, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Forward(w, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Backward(wrk3d, w, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Forward(w, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Backward(wrk3d, w, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
 
-        CALL TLabMPI_TRPF_K(txc, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPB_K(wrk3d, txc, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Forward(txc, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Backward(wrk3d, txc, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
 
-        CALL TLabMPI_TRPF_K(z1, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPB_K(wrk3d, z1, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPF_K(z1, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
-        CALL TLabMPI_TRPB_K(wrk3d, z1, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Forward(z1, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Backward(wrk3d, z1, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Forward(z1, wrk3d, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
+        CALL TLabMPI_TransposeK_Backward(wrk3d, z1, ndisp(1,1), mdisp(1,1), tfsend(1,1), tfrecv(1,1))
 
      ENDDO
 
@@ -271,7 +271,7 @@ END SUBROUTINE TLabMPI_TYPE
 !# ARGUMENTS
 !#
 !########################################################################
-SUBROUTINE TLabMPI_TRPF_K(a, b, ndsp, mdsp, tsend, trecv)
+SUBROUTINE TLabMPI_TransposeK_Forward(a, b, ndsp, mdsp, tsend, trecv)
 
   USE TLabMPI_VARS
 
@@ -335,12 +335,12 @@ SUBROUTINE TLabMPI_TRPF_K(a, b, ndsp, mdsp, tsend, trecv)
 
   CALL MPI_WAITALL(ims_npro*2-2, mpireq(3), status(1,3), ims_err)
 
-  CALL TLabMPI_TAGUPDT
+  CALL TLabMPI_TagUpdate
 
 #endif
 
   RETURN
-END SUBROUTINE TLabMPI_TRPF_K
+END SUBROUTINE TLabMPI_TransposeK_Forward
 
 !########################################################################
 !# Tool/Library
@@ -355,7 +355,7 @@ END SUBROUTINE TLabMPI_TRPF_K
 !# ARGUMENTS
 !#
 !########################################################################
-SUBROUTINE TLabMPI_TRPB_K(b, a, ndsp, mdsp, tsend, trecv)
+SUBROUTINE TLabMPI_TransposeK_Backward(b, a, ndsp, mdsp, tsend, trecv)
 
   USE TLabMPI_VARS
 
@@ -413,12 +413,12 @@ SUBROUTINE TLabMPI_TRPB_K(b, a, ndsp, mdsp, tsend, trecv)
 
   CALL MPI_WAITALL(ims_npro*2-2, mpireq(3), status(1,3), ims_err)
 
-  CALL TLabMPI_TAGUPDT
+  CALL TLabMPI_TagUpdate
 
 #endif
 
   RETURN
-END SUBROUTINE TLabMPI_TRPB_K
+END SUBROUTINE TLabMPI_TransposeK_Backward
 
 !########################################################################
 !# Tool/Library
@@ -433,7 +433,7 @@ END SUBROUTINE TLabMPI_TRPB_K
 !# ARGUMENTS
 !#
 !########################################################################
-SUBROUTINE TLabMPI_TAGUPDT
+SUBROUTINE TLabMPI_TagUpdate
 
   USE TLabMPI_VARS, ONLY : ims_tag
 
@@ -442,11 +442,11 @@ SUBROUTINE TLabMPI_TAGUPDT
   ims_tag = ims_tag + 1
 
   IF ( ims_tag .GT. 32000 ) THEN
-     CALL TLabMPI_TAGRESET
+     CALL TLabMPI_TagReset
   ENDIF
 
   RETURN
-END SUBROUTINE TLabMPI_TAGUPDT
+END SUBROUTINE TLabMPI_TagUpdate
 
 !########################################################################
 !# Tool/Library
@@ -461,7 +461,7 @@ END SUBROUTINE TLabMPI_TAGUPDT
 !# ARGUMENTS
 !#
 !########################################################################
-SUBROUTINE TLabMPI_TAGRESET
+SUBROUTINE TLabMPI_TagReset
 
   USE TLabMPI_VARS, ONLY : ims_tag
 
@@ -470,4 +470,4 @@ SUBROUTINE TLabMPI_TAGRESET
   ims_tag = 0
 
   RETURN
-END SUBROUTINE TLabMPI_TAGRESET
+END SUBROUTINE TLabMPI_TagReset

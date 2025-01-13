@@ -33,9 +33,11 @@ program PARTICLE_TRAJEC
     use MPI
     use TLabMPI_VARS, only: ims_err
     use TLabMPI_VARS, only: ims_pro, ims_npro
-    use TLabMPI_PROCS
+    use TLabMPI_PROCS, only: TLabMPI_Initialize
+    use TLabMPI_Transpose, only: TLabMPI_Transpose_Initialize
 #endif
     use Thermodynamics
+    use Gravity, only: Gravity_Initialize
     use PARTICLE_VARS
     use PARTICLE_ARRAYS
     use PARTICLE_PROCS
@@ -73,12 +75,14 @@ program PARTICLE_TRAJEC
 
     call TLab_Initialize_Parameters(ifile)
 #ifdef USE_MPI
-    call TLabMPI_Initialize()
+    call TLabMPI_Initialize(ifile)
+    call TLabMPI_Transpose_Initialize(ifile)
 #endif
     call Particle_Initialize_Parameters(ifile)
 
     call NavierStokes_Initialize_Parameters(ifile)
     call Thermodynamics_Initialize_Parameters(ifile)
+    call Gravity_Initialize(ifile)
 ! Get the local information from the tlab.ini
     call ScanFile_Int(bakfile, ifile, 'Particle', 'TrajNumber', '0', isize_traj)
     call ScanFile_Int(bakfile, ifile, 'Iteration', 'End', '0', nitera_last)

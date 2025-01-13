@@ -17,9 +17,7 @@ module OPR_INTERPOLATORS
 #ifdef USE_MPI
     use TLab_Constants, only: lfile
     use TLabMPI_VARS, only: ims_npro_i, ims_npro_k
-    use TLabMPI_VARS, only: ims_size_i, ims_ds_i, ims_dr_i, ims_ts_i, ims_tr_i
-    use TLabMPI_VARS, only: ims_size_k, ims_ds_k, ims_dr_k, ims_ts_k, ims_tr_k
-    use TLabMPI_PROCS
+    use TLabMPI_Transpose
 #endif
     implicit none
     private
@@ -56,39 +54,39 @@ contains
 ! This should be OPR_INTERPOLATE_INITIALIZE
 #ifdef USE_MPI
         if (ims_npro_i > 1) then
-            call TLab_Write_ASCII(lfile, 'Initialize MPI type 1 for Ox interpolation.')
-            id = TLabMPI_I_AUX1
+            ! call TLab_Write_ASCII(lfile, 'Initialize MPI type 1 for Ox interpolation.')
+            ! id = TLAB_MPI_TRP_I_AUX1
             npage = nz*ny
             if (MOD(npage, ims_npro_i) /= 0) then ! add space for MPI transposition
                 npage = npage/ims_npro_i
                 npage = (npage + 1)*ims_npro_i
             end if
-            call TLabMPI_TYPE_I(ims_npro_i, nx, npage, 1, 1, 1, 1, &
-                                 ims_size_i(id), ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            ! call TLabMPI_TypeI_Create(ims_npro_i, nx, npage, 1, 1, 1, 1, id)
+            ims_trp_plan_i(TLAB_MPI_TRP_I_AUX1) = TLabMPI_Trp_TypeI_Create_Devel(nx, npage, 1, 1, 1, 1, 'type-1 Ox interpolation')
 
-            call TLab_Write_ASCII(lfile, 'Initialize MPI type 2 for Ox interpolation.')
-            id = TLabMPI_I_AUX2
+            ! call TLab_Write_ASCII(lfile, 'Initialize MPI type 2 for Ox interpolation.')
+            ! id = TLAB_MPI_TRP_I_AUX2
             npage = nz*ny
             if (MOD(npage, ims_npro_i) /= 0) then ! add space for MPI transposition
                 npage = npage/ims_npro_i
                 npage = (npage + 1)*ims_npro_i
             end if
-            call TLabMPI_TYPE_I(ims_npro_i, nx_dst, npage, 1, 1, 1, 1, &
-                                 ims_size_i(id), ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            ! call TLabMPI_TypeI_Create(ims_npro_i, nx_dst, npage, 1, 1, 1, 1, id)
+            ims_trp_plan_i(TLAB_MPI_TRP_I_AUX2) = TLabMPI_Trp_TypeI_Create_Devel(nx_dst, npage, 1, 1, 1, 1, 'type-2 Ox interpolation')
         end if
 
         if (ims_npro_k > 1) then
-            call TLab_Write_ASCII(lfile, 'Initialize MPI type 1 for Oz interpolation.')
-            id = TLabMPI_K_AUX1
+            ! call TLab_Write_ASCII(lfile, 'Initialize MPI type 1 for Oz interpolation.')
+            ! id = TLAB_MPI_TRP_K_AUX1
             npage = nx_dst*ny_dst
-            call TLabMPI_TYPE_K(ims_npro_k, nz, npage, 1, 1, 1, 1, &
-                                 ims_size_k(id), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            ! call TLabMPI_TypeK_Create(ims_npro_k, nz, npage, 1, 1, 1, 1, id)
+            ims_trp_plan_k(TLAB_MPI_TRP_K_AUX1) = TLabMPI_Trp_TypeK_Create_Devel(nz, npage, 1, 1, 1, 1, 'type-1 Oz interpolation')
 
-            call TLab_Write_ASCII(lfile, 'Initialize MPI type 2 for Oz interpolation.')
-            id = TLabMPI_K_AUX2
+            ! call TLab_Write_ASCII(lfile, 'Initialize MPI type 2 for Oz interpolation.')
+            ! id = TLAB_MPI_TRP_K_AUX2
             npage = nx_dst*ny_dst
-            call TLabMPI_TYPE_K(ims_npro_k, nz_dst, npage, 1, 1, 1, 1, &
-                                 ims_size_k(id), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            ! call TLabMPI_TypeK_Create(ims_npro_k, nz_dst, npage, 1, 1, 1, 1, id)
+            ims_trp_plan_k(TLAB_MPI_TRP_K_AUX2) = TLabMPI_Trp_TypeK_Create_Devel(nz_dst, npage, 1, 1, 1, 1, 'type-2 Oz interpolation')
 
         end if
 #endif
@@ -144,14 +142,15 @@ contains
         ! -------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_i > 1) then
-            id = TLabMPI_I_AUX1
+            id = TLAB_MPI_TRP_I_AUX1
             u_tmp2(1:nx*ny*nz) = u_org(1:nx*ny*nz) ! Need additional space for transposition
-            call TLabMPI_TRPF_I(u_tmp2, u_tmp1, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            call TLabMPI_TransposeI_Forward(u_tmp2, u_tmp1, id)
 
             p_a => u_tmp1
             p_b => u_tmp2
 
-            nyz = ims_size_i(id)
+            ! nyz = ims_size_i(id)
+            nyz = ims_trp_plan_i(id)%nlines
             nx_total = nx*ims_npro_i
             nx_total_dst = nx_dst*ims_npro_i
 
@@ -176,8 +175,8 @@ contains
         ! -------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_i > 1) then
-            id = TLabMPI_I_AUX2
-            call TLabMPI_TRPB_I(u_tmp2, u_tmp1, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            id = TLAB_MPI_TRP_I_AUX2
+            call TLabMPI_TransposeI_Backward(u_tmp2, u_tmp1, id)
             u_dst(1:nx_dst*ny*nz) = u_tmp1(1:nx_dst*ny*nz)
         end if
 #endif
@@ -211,13 +210,14 @@ contains
         ! -------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_k > 1) then
-            id = TLabMPI_K_AUX1
-            call TLabMPI_TRPF_K(u_org, u_tmp2, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            id = TLAB_MPI_TRP_K_AUX1
+            call TLabMPI_TransposeK_Forward(u_org, u_tmp2, id)
 
             p_a => u_tmp2
             p_b => u_tmp1
 
-            nxy = ims_size_k(id)
+            ! nxy = ims_size_k(id)
+            nxy = ims_trp_plan_k(id)%nlines
             nz_total = nz*ims_npro_k
             nz_total_dst = nz_dst*ims_npro_k
 
@@ -259,8 +259,8 @@ contains
         ! -------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_k > 1) then
-            id = TLabMPI_K_AUX2
-            call TLabMPI_TRPB_K(u_tmp1, u_dst, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            id = TLAB_MPI_TRP_K_AUX2
+            call TLabMPI_TransposeK_Backward(u_tmp1, u_dst, id)
         end if
 #endif
         nullify (p_a, p_b)
@@ -351,14 +351,14 @@ contains
                 u_org(imax + 1, k) = u_org(1, k)      ! avoid the copy of the whole line
                 call CUBIC_SPLINE(CSpline_BCType, CSpline_BCVal, &
                                   imax + 1, imax_dst, x_org, u_org(1, k), x_dst, u_dst(1, k), &
-                                  wrk1d(imax + 2,1))                 !
+                                  wrk1d(imax + 2, 1))                 !
                 u_org(imax + 1, k) = rdum            ! set u_org back to stored value rdum
             end do                                !
-            wrk1d(1:imax,1) = u_org(1:imax, kmax)     ! cannot avoid the copy for the last line
-            wrk1d(imax + 1,1) = u_org(1, kmax)          ! as u_org(imax+1,kmax) is out of bounds
+            wrk1d(1:imax, 1) = u_org(1:imax, kmax)     ! cannot avoid the copy for the last line
+            wrk1d(imax + 1, 1) = u_org(1, kmax)          ! as u_org(imax+1,kmax) is out of bounds
             call CUBIC_SPLINE(CSpline_BCType, CSpline_BCVal, &
                               imax + 1, imax_dst, x_org, wrk1d, x_dst, u_dst(1, kmax), &
-                              wrk1d(imax + 2,1))
+                              wrk1d(imax + 2, 1))
             !---------------------------------------! the aperiodic case
         else
             CSpline_BCType(1) = CS_BCS_NATURAL; CSpline_BCVal(1) = 0.0_wp

@@ -43,22 +43,25 @@ program SPECTRA
     use MPI
     use TLabMPI_VARS, only: ims_err
     use TLabMPI_VARS, only: ims_pro, ims_npro_k
-    use TLabMPI_VARS, only: ims_size_k, ims_ds_k, ims_dr_k, ims_ts_k, ims_tr_k
-    use TLabMPI_PROCS
+    use TLabMPI_PROCS, only: TLabMPI_Initialize
+    use TLabMPI_Transpose
 #endif
-    use FDM, only: g,  FDM_Initialize
-    use FI_SOURCES, only: FI_BUOYANCY
+    use TLab_Background, only: TLab_Initialize_Background
+    use FDM, only: g, FDM_Initialize
+    use Gravity, only: Gravity_Initialize, buoyancy, Gravity_Buoyancy
     use Thermodynamics, only: imixture, Thermodynamics_Initialize_Parameters
+    use LargeScaleForcing, only: LargeScaleForcing_Initialize
     use THERMO_ANELASTIC
     use Radiation
     use Microphysics
     use Chemistry
     use IBM_VARS
     use IO_FIELDS
-    use OPR_FILTERS
-    use Averages, only: AVG1V2D, COV2V2D
     use OPR_FOURIER
+    use OPR_FILTERS
+    use OPR_Burgers, only: OPR_Burgers_Initialize
     use OPR_ELLIPTIC
+    use Averages, only: AVG1V2D, COV2V2D
 #ifdef USE_OPENMP
     use OMP_LIB
 #endif
@@ -110,11 +113,11 @@ program SPECTRA
     integer(wi) iopt_size
     real(wp) opt_vec(iopt_size_max)
 
-    integer, parameter :: i0 = 0, i1 = 1, i2 = 2, i3 = 3
+    integer, parameter :: i0 = 0 !, i1 = 1, i2 = 2, i3 = 3
 
-#ifdef USE_MPI
-    integer(wi) id
-#endif
+! #ifdef USE_MPI
+!     integer(wi) id
+! #endif
 
 !########################################################################
 !########################################################################
@@ -124,13 +127,16 @@ program SPECTRA
 
     call TLab_Initialize_Parameters(ifile)
 #ifdef USE_MPI
-    call TLabMPI_Initialize()
+    call TLabMPI_Initialize(ifile)
+    call TLabMPI_Transpose_Initialize(ifile)
 #endif
 
     call NavierStokes_Initialize_Parameters(ifile)
     call Thermodynamics_Initialize_Parameters(ifile)
+    call Gravity_Initialize(ifile)
     call Radiation_Initialize(ifile)
     call Microphysics_Initialize(ifile)
+    call LargeScaleForcing_Initialize(ifile)
     call Chemistry_Initialize(ifile)
 
     ! -------------------------------------------------------------------
@@ -316,10 +322,10 @@ program SPECTRA
             isize_aux = ims_npro_k*(jmax_aux/ims_npro_k + 1)
         end if
 
-        call TLab_Write_ASCII(lfile, 'Initialize MPI type 2 for Oz spectra integration.')
-        id = TLabMPI_K_AUX2
-        call TLabMPI_TYPE_K(ims_npro_k, kmax, isize_aux, i1, i1, i1, i1, &
-                            ims_size_k(id), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+        ! call TLab_Write_ASCII(lfile, 'Initialize MPI type 2 for Oz spectra integration.')
+        ! id = TLAB_MPI_TRP_K_AUX2
+        ! call TLabMPI_TypeK_Create(ims_npro_k, kmax, isize_aux, i1, i1, i1, i1, id)
+        ims_trp_plan_k(TLAB_MPI_TRP_K_AUX2) = TLabMPI_Trp_TypeK_Create_Devel(kmax, isize_aux, 1, 1, 1, 1, 'type-2 Oz spectra integration.')
 
     end if
 #endif
@@ -377,19 +383,21 @@ program SPECTRA
 ! -------------------------------------------------------------------
 ! Read the grid
 ! -------------------------------------------------------------------
-    call IO_READ_GRID(gfile, g(1)%size, g(2)%size, g(3)%size, g(1)%scale, g(2)%scale, g(3)%scale, wrk1d(:,1), wrk1d(:,2), wrk1d(:,3))
-    call FDM_Initialize(x, g(1), wrk1d(:,1), wrk1d(:,4))
-    call FDM_Initialize(y, g(2), wrk1d(:,2), wrk1d(:,4))
-    call FDM_Initialize(z, g(3), wrk1d(:,3), wrk1d(:,4))
+    call IO_READ_GRID(gfile, g(1)%size, g(2)%size, g(3)%size, g(1)%scale, g(2)%scale, g(3)%scale, wrk1d(:, 1), wrk1d(:, 2), wrk1d(:, 3))
+    call FDM_Initialize(x, g(1), wrk1d(:, 1), wrk1d(:, 4))
+    call FDM_Initialize(y, g(2), wrk1d(:, 2), wrk1d(:, 4))
+    call FDM_Initialize(z, g(3), wrk1d(:, 3), wrk1d(:, 4))
+
+    call TLab_Initialize_Background(ifile)
+
+    do ig = 1, 3
+        call OPR_FILTER_INITIALIZE(g(ig), PressureFilter(ig))
+    end do
+
+    call OPR_Burgers_Initialize(ifile)
 
     call OPR_Elliptic_Initialize(ifile)
 
-    call TLab_Initialize_Background()
-
-    do ig = 1, 3
-        call OPR_FILTER_INITIALIZE(g(ig), Dealiasing(ig))
-        call OPR_FILTER_INITIALIZE(g(ig), PressureFilter(ig))
-    end do
 
     icalc_radial = 0
     if (flag_mode == 1 .and. g(1)%size == g(3)%size) icalc_radial = 1 ! Calculate radial spectra
@@ -552,7 +560,7 @@ program SPECTRA
                     call THERMO_ANELASTIC_BUOYANCY(imax, jmax, kmax, s, s(1, inb_scal_array))
                 else
                     wrk1d(1:jmax, 1) = 0.0_wp
-                    call FI_BUOYANCY(buoyancy, imax, jmax, kmax, s, s(1, inb_scal_array), wrk1d)
+                    call Gravity_Buoyancy(buoyancy, imax, jmax, kmax, s, s(1, inb_scal_array), wrk1d)
                 end if
                 dummy = 1.0_wp/froude
                 s(:, inb_scal_array) = s(:, inb_scal_array)*dummy
@@ -761,7 +769,7 @@ program SPECTRA
 
             do iv = 1, nfield
                 txc(1:isize_field, 1) = vars(iv)%field(1:isize_field)
-                call OPR_FOURIER_F(i3, imax, jmax, kmax, txc(1, 1), txc(1, 2), txc(1, 3))
+                call OPR_FOURIER_F(3, imax, jmax, kmax, txc(1, 1), txc(1, 2), txc(1, 3))
 
                 call OPR_FOURIER_SPECTRA_3D(imax, jmax, kmax, isize_spec2dr, txc(1, 2), outr(1, iv))
             end do

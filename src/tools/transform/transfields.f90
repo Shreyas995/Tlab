@@ -17,11 +17,14 @@ program TRANSFIELDS
     use TLab_Memory, only: TLab_Initialize_Memory, TLab_Allocate_Real
 #ifdef USE_MPI
     use TLabMPI_VARS, only: ims_npro_i, ims_npro_k
-    use TLabMPI_PROCS
+    use TLabMPI_PROCS, only: TLabMPI_Initialize
+use TLabMPI_Transpose, only: TLabMPI_Transpose_Initialize
 #endif
+    use TLab_Background, only: TLab_Initialize_Background, qbg, sbg
     use FDM, only: g,  FDM_Initialize
     use IO_FIELDS
     use Thermodynamics
+    use Gravity, only: Gravity_Initialize
     use THERMO_ANELASTIC
     use OPR_FILTERS
     use OPR_INTERPOLATORS
@@ -73,11 +76,13 @@ program TRANSFIELDS
 
     call TLab_Initialize_Parameters(ifile)
 #ifdef USE_MPI
-    call TLabMPI_Initialize()
+    call TLabMPI_Initialize(ifile)
+call TLabMPI_Transpose_Initialize(ifile)
 #endif
 
     call NavierStokes_Initialize_Parameters(ifile)
     call Thermodynamics_Initialize_Parameters(ifile)
+    call Gravity_Initialize(ifile)
 
     ! -------------------------------------------------------------------
     ! File names
@@ -282,7 +287,7 @@ program TRANSFIELDS
     call FDM_Initialize(y, g(2), wrk1d(:,2), wrk1d(:,4))
     call FDM_Initialize(z, g(3), wrk1d(:,3), wrk1d(:,4))
 
-    call TLab_Initialize_Background()
+    call TLab_Initialize_Background(ifile)
 
     ! Further allocation
     if (flow_on) call TLab_Allocate_Real(__FILE__, q_dst, [imax_dst*jmax_dst*kmax_dst, inb_flow], 'flow-dst')
@@ -705,8 +710,6 @@ contains
     !# Crop array a into array b in the first two indices
     !########################################################################
     subroutine TRANS_CROP(nx, ny, nz, subdomain, a, b)
-        implicit none
-
         integer(wi) nx, ny, nz, subdomain(6)
         real(wp), dimension(nx, ny, nz) :: a
         real(wp), dimension(nx, subdomain(4) - subdomain(3) + 1, nz) :: b
@@ -725,8 +728,6 @@ contains
     !# Crop array a into array b in the first two indices
     !########################################################################
     subroutine TRANS_EXTRUDE(nx, ny, nz, subdomain, a, b)
-        implicit none
-
         integer(wi) nx, ny, nz, subdomain(6)
         real(wp), intent(IN) :: a(nx, ny, nz)
         real(wp), intent(OUT) :: b(subdomain(2) - subdomain(1) + 1, subdomain(4) - subdomain(3) + 1, subdomain(6) - subdomain(5) + 1)
@@ -743,9 +744,6 @@ contains
     !# Extend array a into array b in the first two indices
     !########################################################################
     subroutine TRANS_EXTEND(nx, ny, nz, planes, a, b)
-
-        implicit none
-
         integer(wi) nx, ny, nz, planes(6)
         real(wp), dimension(nx, ny, nz) :: a
         real(wp), dimension(planes(1) + nx + planes(2), planes(3) + ny + planes(4), nz) :: b
@@ -780,11 +778,7 @@ contains
     !########################################################################
     !########################################################################
     subroutine TRANS_ADD_MEAN(flag_mode, is, nx, ny, nz, y, a, b)
-
-        use TLab_Constants, only: efile
-        use TLAB_VARS, only: sbg, qbg
-        use Profiles
-        implicit none
+        use Profiles, only: Profiles_Calculate
 
         integer(wi) flag_mode, is, nx, ny, nz
         real(wp), dimension(*), intent(IN) :: y
@@ -821,12 +815,9 @@ contains
     !# Calculate b = f(a)
     !########################################################################
     subroutine TRANS_FUNCTION(nx, ny, nz, a, b, txc)
-
         use Thermodynamics, only: imixture
         use Thermodynamics, only: rd_ov_rv, Lvl
         use THERMO_ANELASTIC, only: pbackground
-
-        implicit none
 
         integer(wi) nx, ny, nz
         real(wp), dimension(nx*ny*nz) :: a, b
@@ -838,6 +829,7 @@ contains
         ! #######################################################################
         imixture = MIXT_TYPE_AIRWATER
         call Thermodynamics_Initialize_Parameters(ifile)
+        call Gravity_Initialize(ifile)
         inb_scal = 1
 
         qt_0 = 9.0d-3; qt_1 = 1.5d-3
@@ -871,9 +863,6 @@ contains
     !# b <- b + f(y)*a
     !########################################################################
     subroutine TRANS_BLEND(nx, ny, nz, params, y, a, b)
-
-        implicit none
-
         integer(wi) nx, ny, nz
         real(wp), dimension(*) :: params
         real(wp), dimension(ny) :: y

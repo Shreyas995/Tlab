@@ -23,19 +23,21 @@ module IO_FIELDS
     use TLab_Arrays, only: wrk3d
 #ifdef USE_MPI
     use MPI
-    use TLabMPI_VARS, only: ims_err
-    use TLabMPI_VARS, only: ims_pro, ims_npro_i, ims_npro_k, ims_pro_i, ims_pro_k
-    use TLabMPI_VARS, only: ims_offset_i, ims_offset_j, ims_offset_k
-    use TLabMPI_PROCS, only: TLabMPI_PANIC
+    use TLabMPI_VARS
+    use TLabMPI_PROCS, only: TLabMPI_Panic
 #endif
     use, intrinsic :: iso_c_binding, only: c_f_pointer, c_loc
     implicit none
     private
 
-    public :: IO_READ_FIELDS, IO_WRITE_FIELDS
-    public :: IO_READ_FIELD_INT1, IO_WRITE_FIELD_INT1
+    integer, public :: imode_files              ! files format
+    integer, public :: imode_precision_files    ! single or double precision
+
     integer, parameter, public :: IO_SCAL = 1 ! Header of scalar field
     integer, parameter, public :: IO_FLOW = 2 ! Header of flow field
+
+    public :: IO_READ_FIELDS, IO_WRITE_FIELDS
+    public :: IO_READ_FIELD_INT1, IO_WRITE_FIELD_INT1
 
     type subarray_dt
         sequence
@@ -53,6 +55,7 @@ module IO_FIELDS
     public :: subarray_dt
 #ifdef USE_MPI
     public :: IO_CREATE_SUBARRAY_XOY, IO_CREATE_SUBARRAY_XOZ, IO_CREATE_SUBARRAY_ZOY
+    public :: TLabMPI_WRITE_PE0_SINGLE
 #endif
     public :: IO_WRITE_SUBARRAY, IO_READ_SUBARRAY
 
@@ -60,17 +63,17 @@ module IO_FIELDS
     integer, parameter, public :: IO_SUBARRAY_VISUALS_XOY = 1
     integer, parameter, public :: IO_SUBARRAY_VISUALS_ZOY = 2
     integer, parameter, public :: IO_SUBARRAY_VISUALS_XOZ = 3
-    integer, parameter, public :: IO_SUBARRAY_PLANES_XOY  = 4
-    integer, parameter, public :: IO_SUBARRAY_PLANES_ZOY  = 5
-    integer, parameter, public :: IO_SUBARRAY_PLANES_XOZ  = 6
-    integer, parameter, public :: IO_SUBARRAY_BUFFER_ZOY  = 7
-    integer, parameter, public :: IO_SUBARRAY_BUFFER_XOZ  = 8
-    integer, parameter, public :: IO_SUBARRAY_SPECTRA_X   = 9
-    integer, parameter, public :: IO_SUBARRAY_SPECTRA_Z   = 10
-    integer, parameter, public :: IO_SUBARRAY_SPECTRA_XZ  = 11
-    integer, parameter, public :: IO_SUBARRAY_ENVELOPES   = 12
-    integer, parameter, public :: IO_SUBARRAY_AUX         = 13
-    integer, parameter, public :: IO_SUBARRAY_SIZE        = 13
+    integer, parameter, public :: IO_SUBARRAY_PLANES_XOY = 4
+    integer, parameter, public :: IO_SUBARRAY_PLANES_ZOY = 5
+    integer, parameter, public :: IO_SUBARRAY_PLANES_XOZ = 6
+    integer, parameter, public :: IO_SUBARRAY_BUFFER_ZOY = 7
+    integer, parameter, public :: IO_SUBARRAY_BUFFER_XOZ = 8
+    integer, parameter, public :: IO_SUBARRAY_SPECTRA_X = 9
+    integer, parameter, public :: IO_SUBARRAY_SPECTRA_Z = 10
+    integer, parameter, public :: IO_SUBARRAY_SPECTRA_XZ = 11
+    integer, parameter, public :: IO_SUBARRAY_ENVELOPES = 12
+    integer, parameter, public :: IO_SUBARRAY_AUX = 13
+    integer, parameter, public :: IO_SUBARRAY_SIZE = 13
     type(subarray_dt), public :: io_aux(IO_SUBARRAY_SIZE)
 
     integer(wi) nx_total, ny_total, nz_total
@@ -151,7 +154,6 @@ contains
 #define LOC_STATUS 'old'
 
     subroutine IO_READ_FIELDS(fname, iheader, nx, ny, nz, nfield, iread, a)
-        use TLAB_VARS, only: imode_files, imode_precision_files
         use TLAB_VARS, only: itime, rtime, visc
 
         character(LEN=*) fname
@@ -373,7 +375,7 @@ contains
 #define LOC_STATUS 'unknown'
 
     subroutine IO_WRITE_FIELDS(fname, iheader, nx, ny, nz, nfield, a)
-        use TLAB_VARS, only: imode_files, imode_precision_files, imode_eqns
+        use TLAB_VARS, only: imode_eqns
         use TLAB_VARS, only: itime, rtime
         use TLAB_VARS, only: visc, froude, rossby, damkohler, prandtl, mach
         use TLAB_VARS, only: schmidt
@@ -443,7 +445,7 @@ contains
             else if (iheader == IO_FLOW) then
                 isize = isize + 1; params(isize) = froude
                 isize = isize + 1; params(isize) = rossby
-                if (imode_eqns == DNS_EQNS_INTERNAL .or. imode_eqns == DNS_EQNS_TOTAL) then
+                if (any([DNS_EQNS_TOTAL, DNS_EQNS_INTERNAL] == imode_eqns)) then
                     isize = isize + 1; params(isize) = gama0
                     isize = isize + 1; params(isize) = prandtl
                     isize = isize + 1; params(isize) = mach
@@ -591,7 +593,6 @@ contains
 #undef LOC_UNIT_ID
 #undef LOC_STATUS
 
-    
     !########################################################################
     !########################################################################
     subroutine IO_READ_HEADER(unit, offset, nx, ny, nz, nt, params)
@@ -697,22 +698,22 @@ contains
 #ifdef USE_MPI
                 call MPI_File_open(aux%communicator, trim(adjustl(name)), &
                                    ior(MPI_MODE_WRONLY, MPI_MODE_CREATE), MPI_INFO_NULL, mpio_fh, ims_err)
-                if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                 if (aux%precision == IO_TYPE_SINGLE) then
                     call MPI_File_set_view(mpio_fh, aux%offset, MPI_REAL4, aux%subarray, 'native', MPI_INFO_NULL, ims_err)
-                    if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                    if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                     s_wrk(1:isize) = real(data(sizes(2):sizes(3):sizes(4), iv), sp)
                     call MPI_File_write_all(mpio_fh, s_wrk, isize, MPI_REAL4, status, ims_err)
-                    if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                    if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                 else
                     call MPI_File_set_view(mpio_fh, aux%offset, MPI_REAL8, aux%subarray, 'native', MPI_INFO_NULL, ims_err)
-                    if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                    if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                     wrk3d(1:isize) = data(sizes(2):sizes(3):sizes(4), iv)
                     call MPI_File_write_all(mpio_fh, wrk3d, isize, MPI_REAL8, status, ims_err)
-                    if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                    if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                 end if
                 call MPI_File_close(mpio_fh, ims_err)
-                if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
 
 #else
 #include "dns_open_file.h"
@@ -776,27 +777,27 @@ contains
 #ifdef USE_MPI
                 call MPI_File_open(aux%communicator, trim(adjustl(name)), &
                                    MPI_MODE_RDONLY, MPI_INFO_NULL, mpio_fh, ims_err)
-                if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                 if (aux%precision == IO_TYPE_SINGLE) then
                     call MPI_File_set_view(mpio_fh, aux%offset, MPI_REAL4, aux%subarray, 'native', MPI_INFO_NULL, ims_err)
-                    if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                    if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                     call MPI_File_read_all(mpio_fh, s_wrk, isize, MPI_REAL4, status, ims_err)
-                    if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                    if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                 else
                     call MPI_File_set_view(mpio_fh, aux%offset, MPI_REAL8, aux%subarray, 'native', MPI_INFO_NULL, ims_err)
-                    if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                    if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                     call MPI_File_read_all(mpio_fh, wrk3d, isize, MPI_REAL8, status, ims_err)
-                    if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                    if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
                 end if
                 call MPI_File_close(mpio_fh, ims_err)
-                if (ims_err /= MPI_SUCCESS) call TLabMPI_PANIC(__FILE__, ims_err)
+                if (ims_err /= MPI_SUCCESS) call TLabMPI_Panic(__FILE__, ims_err)
 #else
 #include "dns_open_file.h"
                 ioffset_local = aux%offset + 1
                 if (aux%precision == IO_TYPE_SINGLE) then
-                    read(LOC_UNIT_ID, POS=ioffset_local) s_wrk(1:isize)
+                    read (LOC_UNIT_ID, POS=ioffset_local) s_wrk(1:isize)
                 else
-                    read(LOC_UNIT_ID, POS=ioffset_local) wrk3d(1:isize)
+                    read (LOC_UNIT_ID, POS=ioffset_local) wrk3d(1:isize)
                 end if
                 close (LOC_UNIT_ID)
 #endif
@@ -815,143 +816,97 @@ contains
         return
     end subroutine IO_READ_SUBARRAY
 
-!     !########################################################################
-!     !########################################################################
-! #define LOC_UNIT_ID 54
-! #define LOC_STATUS 'old'
+    !########################################################################
+    !########################################################################
+#ifdef USE_MPI
+    subroutine TLabMPI_WRITE_PE0_SINGLE(iunit, nx, ny, nz, subdomain, u, tmp1, tmp2)
+        use TLabMPI_Transpose
 
-!     subroutine IO_READ_FIELD_XPENCIL(name, header_offset, nx, ny, nz, a, wrk)
-! #ifdef USE_MPI
-!         use TLabMPI_VARS, only: ims_size_i, ims_ds_i, ims_dr_i, ims_ts_i, ims_tr_i
-!         use TLabMPI_PROCS
-! #endif
+        integer ims_tag
+        integer(wi) iunit, nx, ny, nz, subdomain(6)
+        real(wp), dimension(nx*ny*nz), target :: u, tmp1
+        real(wp), dimension(nx*ims_npro_i, *), target :: tmp2
 
-!         character(LEN=*) name
-!         integer(wi), intent(in) :: header_offset, nx, ny, nz
-!         real(wp), intent(out) :: a(nx*ny*nz)
-!         real(wp), intent(inout) :: wrk(nx*ny*nz)
+        ! -------------------------------------------------------------------
+        integer(wi) nx_total, ny_total, nz_total
+        integer(wi) nx_min, nx_max, ny_min, ny_max, nz_min, nz_max
+        integer(wi) nyz
 
-!         target a, wrk
+        integer(wi) ip_i, ip_k, joffset_loc, koffset_loc, id
+        integer(wi) i, jk, j_loc, k_loc
+        integer mpio_size, mpio_ip
+        integer status(MPI_STATUS_SIZE)
 
-! #ifdef USE_MPI
-!         integer(KIND=MPI_OFFSET_KIND) mpio_locoff
-!         real(wp), dimension(:), pointer :: p_read, p_write
-!         integer(wi) id, npage
-! #endif
+        real(wp), dimension(:), pointer :: p_org
 
-!         ! ###################################################################
-! #ifdef USE_MPI
-!         mpio_disp = header_offset*SIZEOFBYTE ! Displacement to start of field
+        ! ###################################################################
+        nx_total = nx*ims_npro_i
+        ny_total = ny
+        nz_total = nz*ims_npro_k
 
-!         if (ims_npro_i > 1) then
-!             ! We always initialize types here. For the general field files, we could
-!             ! use TLabMPI_I_PARTIAL, but we use this routine for other files.
-!             call TLab_Write_ASCII(lfile, 'Initializing MPI types for reading in IO_READ_FIELDS_SPLIT.')
-!             id = TLabMPI_I_AUX1
-!             npage = nz*ny
-!             call TLabMPI_TYPE_I(ims_npro_i, nx, npage, i1, i1, i1, i1, &
-!                                  ims_size_i(id), ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+        nx_min = subdomain(1); nx_max = subdomain(2)
+        ny_min = subdomain(3); ny_max = subdomain(4)
+        nz_min = subdomain(5); nz_max = subdomain(6)
 
-!             p_read => wrk
+        koffset_loc = 0
+        joffset_loc = 0
 
-!         else
-!             p_read => a
+        id = TLAB_MPI_TRP_I_PARTIAL
 
-!         end if
+        ! -------------------------------------------------------------------
+        ! Transposing along Ox
+        ! -------------------------------------------------------------------
+        if (ims_npro_i > 1) then
+            call TLabMPI_TransposeI_Forward(u, tmp1, id)
+            p_org => tmp1
+            ! nyz = ims_size_i(id)
+            nyz = ims_trp_plan_i(id)%nlines
+        else
+            p_org => u
+            nyz = ny*nz
+        end if
+        mpio_size = nyz*nx_total
 
-!         mpio_locsize = nx*ny*nz
-!         mpio_locoff = mpio_locsize         ! mpio_locoff might be of type larger than INT4
-!         mpio_locoff = ims_pro*mpio_locoff  ! mpio_locoff might be of type larger than INT4
-!         call MPI_FILE_OPEN(MPI_COMM_WORLD, name, MPI_MODE_RDONLY, MPI_INFO_NULL, mpio_fh, ims_err)
-!         call MPI_FILE_SET_VIEW(mpio_fh, mpio_disp, MPI_REAL8, MPI_REAL8, 'native', MPI_INFO_NULL, ims_err)
-!         call MPI_FILE_READ_AT_ALL(mpio_fh, mpio_locoff, p_read, mpio_locsize, MPI_REAL8, status, ims_err)
-!         call MPI_FILE_CLOSE(mpio_fh, ims_err)
+        call MPI_BARRIER(MPI_COMM_WORLD, ims_err)
 
-!         if (ims_npro_i > 1) then
-!             call TLabMPI_TRPB_I(p_read, a, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
-!         end if
+        ! -------------------------------------------------------------------
+        ! Passing all data through PE#0
+        ! -------------------------------------------------------------------
+        if (ims_pro == 0) then
 
-!         nullify (p_read)
+            do ip_k = 1, ims_npro_k
+                koffset_loc = nz*(ip_k - 1)
 
-! #else
-! #include "dns_open_file.h"
-!         read (LOC_UNIT_ID, POS=header_offset + 1) a
-!         close (LOC_UNIT_ID)
+                do ip_i = 1, ims_npro_i
+                    joffset_loc = nyz*(ip_i - 1) ! Remember that data is Ox-transposed
 
-! #endif
+                    mpio_ip = ims_npro_i*(ip_k - 1) + ip_i - 1
+                    if (mpio_ip == 0) then
+                        tmp2(1:mpio_size, 1) = p_org(1:mpio_size)
+                    else
+                        call MPI_RECV(tmp2, mpio_size, MPI_REAL8, mpio_ip, ims_tag, MPI_COMM_WORLD, status, ims_err)
+                    end if
 
-!         return
-!     end subroutine IO_READ_FIELD_XPENCIL
+                    do jk = 1, nyz
+                        j_loc = mod((jk - 1 + joffset_loc), ny_total) + 1
+                        k_loc = ((jk - 1 + joffset_loc)/ny_total) + 1 + koffset_loc
 
-! #undef LOC_UNIT_ID
-! #undef LOC_STATUS
+                        if ((j_loc >= ny_min) .and. (j_loc <= ny_max) .and. &
+                            (k_loc >= nz_min) .and. (k_loc <= nz_max)) then
+                            write (iunit) (SNGL(tmp2(i, jk)), i=nx_min, nx_max)
+                        end if
 
-!     !########################################################################
-!     !########################################################################
-! #define LOC_UNIT_ID 55
-! #define LOC_STATUS 'unknown'
+                    end do
 
-!     subroutine IO_WRITE_FIELD_XPENCIL(name, header_offset, nx, ny, nz, a, wrk)
-! #ifdef USE_MPI
-!         use TLabMPI_VARS, only: ims_size_i, ims_ds_i, ims_dr_i, ims_ts_i, ims_tr_i
-!         use TLabMPI_PROCS
-! #endif
+                end do
+            end do
 
-!         character(LEN=*) name
-!         integer(wi), intent(in) :: header_offset, nx, ny, nz
-!         real(wp), intent(in) :: a(nx*ny*nz)
-!         real(wp), intent(inout) :: wrk(nx*ny*nz)
+        else
+            call MPI_SEND(p_org, mpio_size, MPI_REAL8, 0, ims_tag, MPI_COMM_WORLD, ims_err)
+        end if
 
-!         target a, wrk
+        return
+    end subroutine TLabMPI_WRITE_PE0_SINGLE
 
-! #ifdef USE_MPI
-!         integer(KIND=MPI_OFFSET_KIND) mpio_locoff
-!         real(wp), dimension(:), pointer :: p_read, p_write
-!         integer(wi) id, npage
-! #endif
-
-!         ! ###################################################################
-! #ifdef USE_MPI
-!         mpio_disp = header_offset*SIZEOFBYTE
-
-!         call MPI_BARRIER(MPI_COMM_WORLD, ims_err)
-
-!         if (ims_npro_i > 1) then
-!             ! We always initialize types here. For the general field files, we could
-!             ! use TLabMPI_I_PARTIAL, but we use this routine for other files.
-!             call TLab_Write_ASCII(lfile, 'Initializing MPI types for writing in IO_WRITE_FIELDS_SPLIT.')
-!             id = TLabMPI_I_AUX1
-!             npage = nz*ny
-!             call TLabMPI_TYPE_I(ims_npro_i, nx, npage, i1, i1, i1, i1, &
-!                                  ims_size_i(id), ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
-
-!             call TLabMPI_TRPF_I(a, wrk, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
-!             p_write => wrk
-
-!         else
-!             p_write => a
-
-!         end if
-
-!         mpio_locsize = nx*ny*nz
-!         mpio_locoff = mpio_locsize         ! reclen might be of type larger than INT4
-!         mpio_locoff = ims_pro*mpio_locoff  ! reclen might be of type larger than INT4
-!         call MPI_FILE_OPEN(MPI_COMM_WORLD, name, MPI_MODE_WRONLY, MPI_INFO_NULL, mpio_fh, ims_err)
-!         call MPI_FILE_SET_VIEW(mpio_fh, mpio_disp, MPI_REAL8, MPI_REAL8, 'native', MPI_INFO_NULL, ims_err)
-!         call MPI_FILE_WRITE_AT_ALL(mpio_fh, mpio_locoff, p_write, mpio_locsize, MPI_REAL8, status, ims_err)
-!         call MPI_FILE_CLOSE(mpio_fh, ims_err)
-!         nullify (p_write)
-
-! #else
-! #include "dns_open_file.h"
-!         write (LOC_UNIT_ID, POS=header_offset + 1) a
-!         close (LOC_UNIT_ID)
-! #endif
-
-!         return
-!     end subroutine IO_WRITE_FIELD_XPENCIL
-
-! #undef LOC_UNIT_ID
-! #undef LOC_STATUS
-
+#endif
 end module IO_FIELDS

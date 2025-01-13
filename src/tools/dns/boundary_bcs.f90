@@ -122,7 +122,6 @@ contains
 ! ###################################################################
 ! ###################################################################
     subroutine BOUNDARY_BCS_INITIALIZE()
-        use TLab_Types, only: profiles_dt
         use TLab_Constants, only: tag_flow, tag_scal, lfile, efile
 #ifdef TRACE_ON
         use TLab_Constants, only: tfile
@@ -130,19 +129,18 @@ contains
         use TLAB_VARS, only: imode_eqns
         use TLAB_VARS, only: imax, jmax, kmax, inb_flow, inb_scal, inb_flow_array, inb_scal_array
         use FDM, only: g
-        use TLAB_VARS, only: pbg, qbg
+        use Tlab_Background, only: pbg, qbg
         use Thermodynamics, only: CRATIO_INV
         use THERMO_THERMAL
         use THERMO_CALORIC
         use BOUNDARY_BUFFER
-        use Profiles
+        use Profiles, only: profiles_dt, Profiles_Calculate, PROFILE_TANH
 #ifdef USE_MPI
         use MPI
         use TLAB_VARS, only: inb_scal_array
         use TLabMPI_VARS, only: ims_npro_k
-        use TLabMPI_VARS, only: ims_size_k, ims_ds_k, ims_dr_k, ims_ts_k, ims_tr_k
         use TLabMPI_VARS, only: ims_bcs_imax, ims_bcs_jmax
-        use TLabMPI_PROCS
+        use TLabMPI_Transpose
 #endif
 
 ! -------------------------------------------------------------------
@@ -154,7 +152,7 @@ contains
 #ifdef USE_MPI
         character*32 str
         integer(wi) isize_loc
-        integer id
+        ! integer id
 #endif
 
 ! ###################################################################
@@ -214,33 +212,33 @@ contains
 ! Characteristic BCs
 ! -------------------------------------------------------------------
             if (.not. g(1)%periodic) then ! Required for NRBCs in Ox
-                id = TLabMPI_K_NRBCX
+                ! id = TLAB_MPI_TRP_K_NRBCX
                 isize_loc = mod(jmax, ims_npro_k)
                 ims_bcs_imax = 2*(inb_flow + inb_scal_array)
                 do while (mod(isize_loc*ims_bcs_imax, ims_npro_k) > 0)
                     ims_bcs_imax = ims_bcs_imax + 1
                 end do
                 write (str, *) ims_bcs_imax
-                str = 'Initialize MPI types for Ox BCs transverse terms. '//trim(adjustl(str))//' planes.'
-                call TLab_Write_ASCII(lfile, str)
+                ! str = 'Initialize MPI types for Ox BCs transverse terms. '//trim(adjustl(str))//' planes.'
+                ! call TLab_Write_ASCII(lfile, str)
                 isize_loc = ims_bcs_imax*jmax
-                call TLabMPI_TYPE_K(ims_npro_k, kmax, isize_loc, 1, 1, 1, 1, &
-                                     ims_size_k(id), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+                ! call TLabMPI_TypeK_Create(ims_npro_k, kmax, isize_loc, 1, 1, 1, 1, id)
+                ims_trp_plan_k(TLAB_MPI_TRP_K_NRBCX) = TLabMPI_Trp_TypeK_Create_Devel(kmax, isize_loc, 1, 1, 1, 1, 'Ox BCs transverse terms. '//trim(adjustl(str))//' planes.')
             end if
 
             if (.not. g(2)%periodic) then ! Required for NRBCs in Oy
-                id = TLabMPI_K_NRBCY
+                ! id = TLAB_MPI_TRP_K_NRBCY
                 isize_loc = mod(imax, ims_npro_k)
                 ims_bcs_jmax = 2*(inb_flow + inb_scal_array)
                 do while (mod(isize_loc*ims_bcs_jmax, ims_npro_k) > 0)
                     ims_bcs_jmax = ims_bcs_jmax + 1
                 end do
                 write (str, *) ims_bcs_jmax
-                str = 'Initialize MPI types for Oy BCs transverse terms. '//trim(adjustl(str))//' planes.'
-                call TLab_Write_ASCII(lfile, str)
+                ! str = 'Initialize MPI types for Oy BCs transverse terms. '//trim(adjustl(str))//' planes.'
+                ! call TLab_Write_ASCII(lfile, str)
                 isize_loc = imax*ims_bcs_jmax
-                call TLabMPI_TYPE_K(ims_npro_k, kmax, isize_loc, 1, 1, 1, 1, &
-                                     ims_size_k(id), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+                ! call TLabMPI_TypeK_Create(ims_npro_k, kmax, isize_loc, 1, 1, 1, 1, id)
+                ims_trp_plan_k(TLAB_MPI_TRP_K_NRBCY) = TLabMPI_Trp_TypeK_Create_Devel(kmax, isize_loc, 1, 1, 1, 1, 'Oy BCs transverse terms. '//trim(adjustl(str))//' planes.')
             end if
 #endif
 
@@ -457,7 +455,7 @@ contains
 
             select case (g%nb_diag_1(2))
             case (3)
-                call MatMul_3d_antisym(g%size, nxz, g%rhs1(:, 1), g%rhs1(:, 2), g%rhs1(:, 3), p_org, p_dst, g%periodic, ibc, g%rhs1_b, g%rhs1_t, p_bcs_hb, p_bcs_ht)
+  call MatMul_3d_antisym(g%size, nxz, g%rhs1(:, 1), g%rhs1(:, 2), g%rhs1(:, 3), p_org, p_dst, g%periodic, ibc, g%rhs1_b, g%rhs1_t, p_bcs_hb, p_bcs_ht)
             case (5)
                 call MatMul_5d_antisym(g%size,  nxz, g%rhs1(:, 1), g%rhs1(:, 2), g%rhs1(:, 3), g%rhs1(:, 4), g%rhs1(:, 5), p_org, p_dst, g%periodic, ibc, g%rhs1_b, g%rhs1_t,  p_bcs_hb, p_bcs_ht)
             case (7)

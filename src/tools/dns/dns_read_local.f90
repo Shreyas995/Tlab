@@ -3,12 +3,10 @@
 #include "avgij_map.h"
 
 subroutine DNS_READ_LOCAL(inifile)
-
-    use TLab_Types, only: MAX_MODES
     use TLab_Constants, only: wp, wi, big_wp, efile, lfile, wfile
     use TLAB_VARS
     use FDM, only: g
-    use TLab_Spatial, only: nstatavg
+    use Avg_Spatial, only: nstatavg
     use TLab_WorkFlow, only: TLab_Write_ASCII, TLab_Stop
     use PARTICLE_VARS
     use DNS_LOCAL
@@ -20,6 +18,8 @@ subroutine DNS_READ_LOCAL(inifile)
     use PLANES
     use IBM_VARS, only: imode_ibm, ibm_geo
     use AVG_PHASE
+    use OPR_Filters, only: FilterDomain, PressureFilter
+    use Discrete, only: Discrete_ReadBlock
 
     implicit none
 
@@ -515,7 +515,7 @@ subroutine DNS_READ_LOCAL(inifile)
     ! -------------------------------------------------------------------
     ! Discrete Forcing
     ! -------------------------------------------------------------------
-    call DISCRETE_READBLOCK(bakfile, inifile, 'Discrete', fp)
+    call Discrete_ReadBlock(bakfile, inifile, 'Discrete', fp)
     ! Modulation type in fp%type; varicose or sinuous
 
     ! Parameter 1 is the y-thickness of the perturbation

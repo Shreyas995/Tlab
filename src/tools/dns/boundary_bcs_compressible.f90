@@ -7,10 +7,14 @@
 !  Nonperiodic characteristic BCs at xmin and xmax
 module BOUNDARY_BCS_COMPRESSIBLE
     use TLab_Constants, only: efile, wp, wi
-    use TLAB_VARS
+    use TLAB_VARS, only: imax, jmax, kmax, inb_scal_array
+    use TLAB_VARS, only: inb_flow, inb_scal, imode_eqns
+    use TLAB_VARS, only: imode_sim, scal_on, flow_on
+    use Tlab_Background, only: qbg
     use FDM, only: g
     use TLab_WorkFlow, only: TLab_Write_ASCII, TLab_Stop
     use Thermodynamics, only: imixture, CRATIO_INV, THERMO_AI
+    use Gravity, only: buoyancy
     use BOUNDARY_INFLOW
     use BOUNDARY_BCS
     use OPR_PARTIAL
@@ -2062,7 +2066,7 @@ contains
 ! Needs to be checked
         call TLab_Write_ASCII(efile, 'BOUNDARY_BCS_TRANSVERSE_X. To be checked')
         call TLab_Stop(DNS_ERROR_UNDEVELOP)
-!  imode_fdm_loc = imode_fdm + (TLabMPI_K_NRBCX-1)*100
+!  imode_fdm_loc = imode_fdm + (TLAB_MPI_TRP_K_NRBCX-1)*100
         call OPR_PARTIAL_Z(OPR_P1_BCS, ims_bcs_imax, jmax, kmax, bcs, g(3), tmp1, ddz)
 #else
         call OPR_PARTIAL_Y(OPR_P1, ip, jmax, kmax, bcs, g(2), tmp1, ddy)
@@ -2214,7 +2218,7 @@ contains
 ! Needs to be checked
         call TLab_Write_ASCII(efile, 'BOUNDARY_BCS_TRANSVERSE_Y. To be checked')
         call TLab_Stop(DNS_ERROR_UNDEVELOP)
-!  imode_fdm_loc = imode_fdm + (TLabMPI_K_NRBCY-1)*100
+!  imode_fdm_loc = imode_fdm + (TLAB_MPI_TRP_K_NRBCY-1)*100
         call OPR_PARTIAL_Z(OPR_P1_BCS, imax, ims_bcs_jmax, kmax, bcs, g(3), tmp1, ddz)
 #else
         call OPR_PARTIAL_X(OPR_P1, imax, ip, kmax, bcs, g(1), tmp1, ddx)

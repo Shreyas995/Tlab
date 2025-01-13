@@ -16,10 +16,7 @@ subroutine OPR_CHECK()
     use MPI
     use TLabMPI_VARS, only: ims_err
     use TLabMPI_VARS, only: ims_npro_i, ims_npro_k
-    use TLabMPI_VARS, only: ims_ds_i, ims_dr_i, ims_ts_i, ims_tr_i
-    use TLabMPI_VARS, only: ims_ds_k, ims_dr_k, ims_ts_k, ims_tr_k
-    use TLabMPI_VARS, only: ims_sizBlock_i, ims_sizBlock_k
-    use TLabMPI_PROCS
+    use TLabMPI_Transpose
 #endif
 
     implicit none
@@ -47,11 +44,11 @@ subroutine OPR_CHECK()
 ! -------------------------------------------------------------------
 #ifdef USE_MPI
     if (ims_npro_i > 1) then
-        id = TLabMPI_I_PARTIAL
+        id = TLAB_MPI_TRP_I_PARTIAL
 
         call SYSTEM_CLOCK(t_srt, PROC_CYCLES, MAX_CYCLES)
-        call TLabMPI_TRPF_I(q(1, 1), wrk3d, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
-        call TLabMPI_TRPB_I(wrk3d, q(1, 2), ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+        call TLabMPI_TransposeI_Forward(q(1, 1), wrk3d, id)
+        call TLabMPI_TransposeI_Backward(wrk3d, q(1, 2), id)
         call SYSTEM_CLOCK(t_end, PROC_CYCLES, MAX_CYCLES)
 
         idummy = t_end - t_srt
@@ -66,12 +63,6 @@ subroutine OPR_CHECK()
                //TRIM(ADJUSTL(line))//'. Max. elapsed time '//TRIM(ADJUSTL(str))//' sec.'
         call TLab_Write_ASCII(lfile, line)
 
-        if (ims_npro_i > ims_sizBlock_i) then
-            line = ''
-            write (line, *) ims_sizBlock_i
-            line = '   using blocking of '//TRIM(ADJUSTL(line))//' in  TLabMPI_TRP<F,B>_I'
-            call TLab_Write_ASCII(lfile, line)
-        end if
     end if
 #endif
 
@@ -80,13 +71,13 @@ subroutine OPR_CHECK()
 ! -------------------------------------------------------------------
 #ifdef USE_MPI
     if (ims_npro_k > 1) then
-        id = TLabMPI_K_PARTIAL
+        id = TLAB_MPI_TRP_K_PARTIAL
 
         call SYSTEM_CLOCK(t_srt, PROC_CYCLES, MAX_CYCLES)
         idummy = itime; itime = -1  ! set itime to -1 for this call to trigger interruption
-        call TLabMPI_TRPF_K(q(1, 1), wrk3d, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+        call TLabMPI_TransposeK_Forward(q(:, 1), wrk3d, id)
         itime = idummy
-        call TLabMPI_TRPB_K(wrk3d, q(1, 2), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+        call TLabMPI_TransposeK_Backward(wrk3d, q(:, 2), id)
         call SYSTEM_CLOCK(t_end, PROC_CYCLES, MAX_CYCLES)
 
         idummy = t_end - t_srt
@@ -101,12 +92,6 @@ subroutine OPR_CHECK()
                //TRIM(ADJUSTL(line))//'. Max. elapsed time '//TRIM(ADJUSTL(str))//' sec.'
         call TLab_Write_ASCII(lfile, line)
 
-        if (ims_npro_k > ims_sizBlock_k) then
-            line = ''
-            write (line, *) ims_sizBlock_k
-            line = '   using blocking of '//TRIM(ADJUSTL(line))//' in  TLabMPI_TRP<F,B>_K'
-            call TLab_Write_ASCII(lfile, line)
-        end if
     end if
 #endif
 

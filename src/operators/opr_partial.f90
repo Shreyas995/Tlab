@@ -18,11 +18,8 @@ module OPR_PARTIAL
     use IBM_VARS, only: ims_pro_ibm_x, ims_pro_ibm_y, ims_pro_ibm_z
     use IBM_VARS, only: ibm_case_x, ibm_case_y, ibm_case_z
 #ifdef USE_MPI
-    use TLabMPI_VARS, only: ims_npro_i
-    use TLabMPI_VARS, only: ims_size_i, ims_ds_i, ims_dr_i, ims_ts_i, ims_tr_i
-    use TLabMPI_VARS, only: ims_npro_k
-    use TLabMPI_VARS, only: ims_size_k, ims_ds_k, ims_dr_k, ims_ts_k, ims_tr_k
-    use TLabMPI_PROCS
+    use TLabMPI_VARS, only: ims_npro_i, ims_npro_k
+    use TLabMPI_Transpose
 #endif
     use FDM_MatMul
     implicit none
@@ -195,7 +192,7 @@ contains
         ! ###################################################################
         ! Check whether to calculate 1. order derivative
         ! ###################################################################
-        if (is >= 0 .or. g%need_1der) then   ! called from opr_burgers or need for 1. order derivative
+        if (is >= 0 .or. g%need_1der) then   ! called from OPR_Burgers or need for 1. order derivative
             call OPR_PARTIAL1(nlines, bcs(:, 1), g, u, du)
         end if
 
@@ -411,7 +408,7 @@ contains
         real(wp), dimension(:), pointer :: p_a, p_b, p_c, p_d
 
 #ifdef USE_MPI
-        integer(wi), parameter :: id = TLabMPI_I_PARTIAL
+        integer(wi), parameter :: id = TLAB_MPI_TRP_I_PARTIAL
 #endif
 
 ! ###################################################################
@@ -420,14 +417,15 @@ contains
 ! -------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_i > 1) then
-            call TLabMPI_TRPF_I(u, result, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            call TLabMPI_TransposeI_Forward(u, result, id)
             p_a => result
             p_b => wrk3d
             p_c => result
             if (any([OPR_P2, OPR_P2_P1] == type)) then
                 p_d => tmp1
             end if
-            nyz = ims_size_i(id)
+            ! nyz = ims_size_i(id)
+            nyz = ims_trp_plan_i(id)%nlines
         else
 #endif
             p_a => u
@@ -508,9 +506,9 @@ contains
 #ifdef USE_MPI
         if (ims_npro_i > 1) then
             if (type == OPR_P2_P1) then ! only if you really want first derivative back
-                call TLabMPI_TRPB_I(p_c, tmp1, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+                call TLabMPI_TransposeI_Backward(p_c, tmp1, id)
             end if
-            call TLabMPI_TRPB_I(p_b, result, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            call TLabMPI_TransposeI_Backward(p_b, result, id)
         end if
 #endif
 
@@ -547,7 +545,7 @@ contains
         real(wp), dimension(:), pointer :: p_a, p_b, p_c
 
 #ifdef USE_MPI
-        integer(wi), parameter :: id = TLabMPI_K_PARTIAL
+        integer(wi), parameter :: id = TLAB_MPI_TRP_K_PARTIAL
 #endif
 
 ! ###################################################################
@@ -562,7 +560,7 @@ contains
 ! -------------------------------------------------------------------
 #ifdef USE_MPI
             if (ims_npro_k > 1) then
-                call TLabMPI_TRPF_K(u, result, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+                call TLabMPI_TransposeK_Forward(u, result, id)
                 p_a => result
                 if (any([OPR_P2, OPR_P2_P1] == type)) then
                     p_b => tmp1
@@ -570,7 +568,8 @@ contains
                 else
                     p_b => wrk3d
                 end if
-                nxy = ims_size_k(id)
+                ! nxy = ims_size_k(id)
+                nxy = ims_trp_plan_k(id)%nlines
             else
 #endif
                 p_a => u
@@ -624,9 +623,9 @@ contains
 ! Put arrays back in the order in which they came in
 #ifdef USE_MPI
             if (ims_npro_k > 1) then
-                call TLabMPI_TRPB_K(p_b, result, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+                call TLabMPI_TransposeK_Backward(p_b, result, id)
                 if (type == OPR_P2_P1) then
-                    call TLabMPI_TRPB_K(p_c, tmp1, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+                    call TLabMPI_TransposeK_Backward(p_c, tmp1, id)
                 end if
             end if
 #endif

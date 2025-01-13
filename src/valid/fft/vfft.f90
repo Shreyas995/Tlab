@@ -12,7 +12,8 @@ program VFFT
     use OPR_FOURIER
 #ifdef USE_MPI
     use MPI
-    use TLabMPI_PROCS
+    use TLabMPI_PROCS, only: TLabMPI_Initialize
+use TLabMPI_Transpose, only: TLabMPI_Transpose_Initialize
 #endif
 
     implicit none
@@ -31,7 +32,8 @@ program VFFT
     call TLab_Start()
     call TLab_Initialize_Parameters('tlab.ini')
 #ifdef USE_MPI
-    call TLabMPI_Initialize()
+    call TLabMPI_Initialize(ifile)
+call TLabMPI_Transpose_Initialize(ifile)
 #endif
     call NavierStokes_Initialize_Parameters(ifile)
 

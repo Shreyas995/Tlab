@@ -56,7 +56,7 @@ module Thermodynamics
     real(wp), public :: RRATIO_INV                      ! gama0 mach^2 = (U0^2/T0)/R0, inverse of RRATIO to save computational time in some routines
     ! Anelastic and incompressible formulation
     real(wp), public :: GRATIO                          ! (gama0-1)/gama0 = R0/Cp0
-    real(wp), public :: scaleheight                     ! Equivalent to Fr*RRATIO in compressible formulation
+    real(wp), public :: scaleheightinv                  ! Inverse of pressure scale height. Equivalent to 1/(Fr*RRATIO) in compressible formulation
 
     ! Nondimensional formulation
     logical, public :: nondimensional = .true.          ! consider nondimensional formulation
@@ -80,7 +80,7 @@ contains
     subroutine Thermodynamics_Initialize_Parameters(inifile)
         use TLAB_VARS, only: inb_scal, inb_scal_array
         use TLAB_VARS, only: mach, imode_eqns
-        ! use THERMO_ANELASTIC, only: scaleheight, GRATIO
+        ! use THERMO_ANELASTIC, only: scaleheightinv, GRATIO
 
         character(len=*), intent(in), optional :: inifile
 
@@ -122,7 +122,8 @@ contains
             call TLab_Write_ASCII(bakfile, '#Nondimensional=<yes,no>')
 
             call ScanFile_Real(bakfile, inifile, block, 'HeatCapacityRatio', '1.4', gama0)      ! needed in compressible formulation
-            call ScanFile_Real(bakfile, inifile, block, 'ScaleHeight', '0.0', scaleheight)      ! needed in anelastic formulation
+            call ScanFile_Real(bakfile, inifile, block, 'ScaleHeight', '0.0', scaleheightinv)   ! needed in anelastic formulation
+            if (scaleheightinv > 0.0_wp) scaleheightinv = 1.0_wp/scaleheightinv
 
             call ScanFile_Char(bakfile, inifile, block, 'Mixture', 'None', sRes)
             if (trim(adjustl(sRes)) == 'none') &
@@ -133,7 +134,7 @@ contains
             else if (trim(adjustl(sRes)) == 'airwater') then; imixture = MIXT_TYPE_AIRWATER
             else if (trim(adjustl(sRes)) == 'airwaterlinear') then; imixture = MIXT_TYPE_AIRWATER_LINEAR
             else
-                call TLab_Write_ASCII(efile, __FILE__//'. Error in Thermodynamics.Type.')
+                call TLab_Write_ASCII(efile, __FILE__//'. Error in Thermodynamics.Mixture.')
                 call TLab_Stop(DNS_ERROR_OPTION)
             end if
 
@@ -218,7 +219,7 @@ contains
             ! Air; data from Iribarne and Godson, 1981
             ! -------------------------------------------------------------------
         case (MIXT_TYPE_AIR)
-            NSP = NSP + 1; THERMO_SPNAME(NSP) = 'Air'; WGHT(NSP) = 28.9644_wp 
+            NSP = NSP + 1; THERMO_SPNAME(NSP) = 'Air'; WGHT(NSP) = 28.9644_wp
             WGHT(2) = 28.9644_wp  ! needed for the nondimensionalization, based on species 2; to be fixed
 
             ! -------------------------------------------------------------------
@@ -465,6 +466,8 @@ contains
 
         ! -------------------------------------------------------------------
         ! Nondimensionalization
+        !- Compressible formulations use p nondimensionalized by reference dynamic pressure rho_0 U_0^2
+        !- Incompressible and anelastic formulations use p nondimensionalized by reference thermodynamic pressure p_0
         if (imixture == MIXT_TYPE_NONE .and. .not. nondimensional) then
             call TLab_Write_ASCII(efile, __FILE__//'. Single species formulation must be nondimensional.')
             call TLab_Stop(DNS_ERROR_OPTION)

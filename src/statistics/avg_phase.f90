@@ -52,7 +52,7 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef USE_MPI
     use MPI
-    use TLabMPI_VARS, only: ims_size_i, ims_size_k, ims_pro, ims_npro_i, ims_pro_k
+    use TLabMPI_VARS, only: ims_pro, ims_npro_i, ims_pro_k
 #endif
 
     implicit none
@@ -338,7 +338,6 @@ CONTAINS
       integer(wi) :: isize, iheader, ifld, ifld_srt, ifld_end
       character(len=10) :: start, end, fld_id
       integer(wi) :: arr_planes, header_offset, ioffset_local
-      character(len=100) :: filename
       integer(wi) :: nxy
 
 #ifdef USE_MPI

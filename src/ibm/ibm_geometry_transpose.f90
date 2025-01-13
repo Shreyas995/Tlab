@@ -1,4 +1,4 @@
-#ifdef USE_MPI 
+#ifdef USE_MPI
 #include "dns_const_mpi.h"
 #endif
 
@@ -12,83 +12,80 @@
 !# DESCRIPTION OF SUBROUTINES
 !#   transposes geometry field eps (epsi, epsj, epsk)
 !#
-!# 
+!#
 !########################################################################
-!# ARGUMENTS 
+!# ARGUMENTS
 !#
 !#
 !########################################################################
 !# REQUIREMENTS
-!#                           
+!#
 !#
 !########################################################################
 
 subroutine IBM_GEOMETRY_TRANSPOSE(epsi, epsj, epsk, tmp)
-  
-  use IBM_VARS
-  use FDM,      only : g
-  use TLAB_VARS,      only : imax, jmax, kmax, isize_field 
-  use TLab_Constants, only : wi, wp
+
+    use IBM_VARS
+    use FDM, only: g
+    use TLAB_VARS, only: imax, jmax, kmax, isize_field
+    use TLab_Constants, only: wi, wp
 #ifdef USE_MPI
-  use MPI 
-  use TLabMPI_VARS,  only : ims_ds_i, ims_dr_i, ims_ts_i, ims_tr_i
-  use TLabMPI_VARS,  only : ims_ds_k, ims_dr_k, ims_ts_k, ims_tr_k
-  use TLabMPI_VARS,  only : ims_npro_i, ims_npro_k
-  use TLabMPI_VARS,  only : ims_size_i 
-  use TLabMPI_PROCS
+    use TLabMPI_VARS, only: ims_npro_i, ims_npro_k
+    use TLabMPI_Transpose
 #endif
 
-  implicit none
-  
-  real(wp), dimension(isize_field), intent(  out) :: epsi, epsj, epsk
-  real(wp), dimension(isize_field), intent(inout) :: tmp
+    implicit none
 
-#ifdef USE_MPI 
-  integer(wi), parameter                          :: idi = TLabMPI_I_PARTIAL 
-  integer(wi), parameter                          :: idk = TLabMPI_K_PARTIAL 
-#endif
-  integer(wi)                                     :: nyz, nxy
+    real(wp), dimension(isize_field), intent(out) :: epsi, epsj, epsk
+    real(wp), dimension(isize_field), intent(inout) :: tmp
 
-  ! ================================================================== !
-  ! MPI  and local transposition in x
 #ifdef USE_MPI
-  if ( ims_npro_i > 1 ) then
-    call TLabMPI_TRPF_I(eps, tmp, ims_ds_i(1,idi), ims_dr_i(1,idi), ims_ts_i(1,idi), ims_tr_i(1,idi))
-    nyz = ims_size_i(idi)
-  else
+    integer(wi), parameter :: idi = TLAB_MPI_TRP_I_PARTIAL
+    integer(wi), parameter :: idk = TLAB_MPI_TRP_K_PARTIAL
 #endif
-  tmp = eps
-  nyz = jmax * kmax 
+    integer(wi) :: nyz, nxy
+
+    ! ================================================================== !
+    ! MPI  and local transposition in x
 #ifdef USE_MPI
-  end if
+    if (ims_npro_i > 1) then
+        call TLabMPI_TransposeI_Forward(eps, tmp, idi)
+        ! nyz = ims_size_i(idi)
+        nyz = ims_trp_plan_i(idi)%nlines
+    else
+#endif
+        tmp = eps
+        nyz = jmax*kmax
+#ifdef USE_MPI
+    end if
 #endif
 
 #ifdef USE_ESSL
-  call DGETMO       (tmp, g(1)%size, g(1)%size, nyz,       epsi, nyz)
+    call DGETMO(tmp, g(1)%size, g(1)%size, nyz, epsi, nyz)
 #else
-  call TLab_Transpose(tmp, g(1)%size, nyz,       g(1)%size, epsi, nyz)
+    call TLab_Transpose(tmp, g(1)%size, nyz, g(1)%size, epsi, nyz)
 #endif
-  ! -------------------------------------------------------------------
-  ! local transposition in y
-  nxy = imax * jmax
+    ! -------------------------------------------------------------------
+    ! local transposition in y
+    nxy = imax*jmax
 #ifdef USE_ESSL
-  call DGETMO       (eps, nxy, nxy, kmax, epsj, kmax)
+    call DGETMO(eps, nxy, nxy, kmax, epsj, kmax)
 #else
-  call TLab_Transpose(eps, nxy, kmax, nxy, epsj, kmax)
+    call TLab_Transpose(eps, nxy, kmax, nxy, epsj, kmax)
 #endif
-  ! -------------------------------------------------------------------
-  ! MPI transposition in z
+    ! -------------------------------------------------------------------
+    ! MPI transposition in z
 #ifdef USE_MPI
-  if ( ims_npro_k > 1 ) then
-    call TLabMPI_TRPF_K(eps, epsk, ims_ds_k(1,idk), ims_dr_k(1,idk), ims_ts_k(1,idk), ims_tr_k(1,idk))
-  else
+    if (ims_npro_k > 1) then
+        call TLabMPI_TransposeK_Forward(eps, epsk, idk)
+    else
 #endif
-  epsk = eps
+        epsk = eps
 #ifdef USE_MPI
-  end if
+    end if
 #endif
-  
-return
+
+    return
 end subroutine IBM_GEOMETRY_TRANSPOSE
 
 !########################################################################

@@ -12,13 +12,16 @@ program PDFS
     use TLab_WorkFlow, only: TLab_Write_ASCII, TLab_Stop, TLab_Start
     use TLab_Memory, only: TLab_Initialize_Memory
 #ifdef USE_MPI
-    use TLabMPI_PROCS
+    use TLabMPI_PROCS, only: TLabMPI_Initialize
+    use TLabMPI_Transpose, only: TLabMPI_Transpose_Initialize
 #endif
-    use FDM, only: g,  FDM_Initialize
-    use FI_SOURCES, only: bbackground, FI_BUOYANCY
+    use FDM, only: g, FDM_Initialize
+    use TLab_Background, only: TLab_Initialize_Background
+    use Gravity, only: Gravity_Initialize, buoyancy, bbackground, Gravity_Buoyancy
     use Thermodynamics, only: imixture, Thermodynamics_Initialize_Parameters
     use THERMO_ANELASTIC
     use Radiation
+    use LargeScaleForcing, only: LargeScaleForcing_Initialize
     use Microphysics
     use Chemistry
     use IO_FIELDS
@@ -26,9 +29,10 @@ program PDFS
     use FI_STRAIN_EQN
     use FI_GRADIENT_EQN
     use FI_VORTICITY_EQN
-    use OPR_FILTERS
-    use OPR_FOURIER
     use OPR_PARTIAL
+    use OPR_FOURIER
+    use OPR_FILTERS
+    use OPR_Burgers, only: OPR_Burgers_Initialize
     use OPR_ELLIPTIC
 
     implicit none
@@ -87,13 +91,16 @@ program PDFS
 
     call TLab_Initialize_Parameters(ifile)
 #ifdef USE_MPI
-    call TLabMPI_Initialize()
+    call TLabMPI_Initialize(ifile)
+    call TLabMPI_Transpose_Initialize(ifile)
 #endif
 
     call NavierStokes_Initialize_Parameters(ifile)
     call Thermodynamics_Initialize_Parameters(ifile)
+    call Gravity_Initialize(ifile)
     call Radiation_Initialize(ifile)
     call Microphysics_Initialize(ifile)
+    call LargeScaleForcing_Initialize(ifile)
     call Chemistry_Initialize(ifile)
 
     ! -------------------------------------------------------------------
@@ -249,17 +256,18 @@ program PDFS
     ! -------------------------------------------------------------------
     ! Initialize
     ! -------------------------------------------------------------------
-    call IO_READ_GRID(gfile, g(1)%size, g(2)%size, g(3)%size, g(1)%scale, g(2)%scale, g(3)%scale, wrk1d(:,1), wrk1d(:,2), wrk1d(:,3))
-    call FDM_Initialize(x, g(1), wrk1d(:,1), wrk1d(:,4))
-    call FDM_Initialize(y, g(2), wrk1d(:,2), wrk1d(:,4))
-    call FDM_Initialize(z, g(3), wrk1d(:,3), wrk1d(:,4))
+    call IO_READ_GRID(gfile, g(1)%size, g(2)%size, g(3)%size, g(1)%scale, g(2)%scale, g(3)%scale, wrk1d(:, 1), wrk1d(:, 2), wrk1d(:, 3))
+    call FDM_Initialize(x, g(1), wrk1d(:, 1), wrk1d(:, 4))
+    call FDM_Initialize(y, g(2), wrk1d(:, 2), wrk1d(:, 4))
+    call FDM_Initialize(z, g(3), wrk1d(:, 3), wrk1d(:, 4))
+
+    call TLab_Initialize_Background(ifile)
+
+    call OPR_Burgers_Initialize(ifile)
 
     call OPR_Elliptic_Initialize(ifile)
 
-    call TLab_Initialize_Background()  ! Initialize thermodynamic quantities
-
     do ig = 1, 3
-        call OPR_FILTER_INITIALIZE(g(ig), Dealiasing(ig))
         call OPR_FILTER_INITIALIZE(g(ig), PressureFilter(ig))
     end do
 
@@ -390,7 +398,7 @@ program PDFS
                         call THERMO_ANELASTIC_BUOYANCY(imax, jmax, kmax, s, wrk3d)
                     else
                         wrk1d(1:jmax, 1) = 0.0_wp
-                        call FI_BUOYANCY(buoyancy, imax, jmax, kmax, s, wrk3d, wrk1d)
+                        call Gravity_Buoyancy(buoyancy, imax, jmax, kmax, s, wrk3d, wrk1d)
                     end if
                     s(1:isize_field, 1) = wrk3d(1:isize_field)*buoyancy%vector(2)
 
@@ -687,7 +695,7 @@ program PDFS
                 call THERMO_ANELASTIC_BUOYANCY(imax, jmax, kmax, s, txc(1, 1))
             else
                 wrk1d(1:jmax, 1) = 0.0_wp
-                call FI_BUOYANCY(buoyancy, imax, jmax, kmax, s, txc(1, 1), wrk1d)
+                call Gravity_Buoyancy(buoyancy, imax, jmax, kmax, s, txc(1, 1), wrk1d)
             end if
             dummy = 1.0_wp/froude
             txc(1:isize_field, 1) = txc(1:isize_field, 1)*dummy

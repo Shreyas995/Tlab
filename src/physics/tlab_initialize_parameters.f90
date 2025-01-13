@@ -8,27 +8,23 @@
 
 !########################################################################
 !# Reading general data from file tlab.ini, setting up general parameters
-!# and doing cross-check of these general data.
 !########################################################################
 subroutine TLab_Initialize_Parameters(inifile)
-
     use TLab_Constants, only: wp, wi, lfile, efile, wfile, MajorVersion, MinorVersion
-    use TLAB_VARS, only: imode_sim, imode_files, imode_precision_files, imode_verbosity
+    use TLab_WorkFlow, only: TLab_Write_ASCII, TLab_Stop, imode_verbosity
+    use TLAB_VARS, only: imode_sim
     use TLAB_VARS, only: flow_on, scal_on, fourier_on, stagger_on
     use TLAB_VARS, only: imax, jmax, kmax, isize_field
     use TLAB_VARS, only: isize_wrk1d, isize_wrk2d, isize_wrk3d
     use TLAB_VARS, only: isize_txc_field, isize_txc_dimx, isize_txc_dimz
     use FDM, only: g
-    use TLAB_VARS, only: FilterDomain, FilterDomainActive, FilterDomainBcsFlow, FilterDomainBcsScal, Dealiasing, PressureFilter
-    use TLab_Spatial
-    use TLab_WorkFlow, only: TLab_Write_ASCII, TLab_Stop
-    use Profiles, only: Profiles_ReadBlock, PROFILE_EKMAN_U, PROFILE_EKMAN_U_P, PROFILE_EKMAN_V
-
+    use IO_FIELDS, only: imode_files, imode_precision_files
+    ! use Avg_Spatial
 #ifdef USE_MPI
     use TLabMPI_VARS
 #endif
-    use OPR_FILTERS, only: FILTER_READBLOCK
-
+    use OPR_Filters, only: FilterDomain, FilterDomainActive, FilterDomainBcsFlow, FilterDomainBcsScal, PressureFilter
+    use OPR_Filters, only: FILTER_READBLOCK
     implicit none
 
     character(len=*), intent(in) :: inifile
@@ -140,26 +136,6 @@ subroutine TLab_Initialize_Parameters(inifile)
         call TLab_Stop(DNS_ERROR_OPTION)
     end if
     g(1:3)%mode_fdm2 = g(1:3)%mode_fdm1
-
-#ifdef USE_MPI
-    call ScanFile_Char(bakfile, inifile, 'Main', 'ComModeITranspose', 'asynchronous', sRes)
-    if (trim(adjustl(sRes)) == 'none') then; ims_trp_mode_i = TLabMPI_TRP_NONE
-    elseif (trim(adjustl(sRes)) == 'asynchronous') then; ims_trp_mode_i = TLabMPI_TRP_ASYNCHRONOUS
-    elseif (trim(adjustl(sRes)) == 'sendrecv') then; ims_trp_mode_i = TLabMPI_TRP_SENDRECV
-    else
-        call TLab_Write_ASCII(efile, 'DNS_READ_LOCAL. Wrong ComModeITranspose option.')
-        call TLab_Stop(DNS_ERROR_OPTION)
-    end if
-
-    call ScanFile_Char(bakfile, inifile, 'Main', 'ComModeKTranspose', 'asynchronous', sRes)
-    if (trim(adjustl(sRes)) == 'none') then; ims_trp_mode_k = TLabMPI_TRP_NONE
-    elseif (trim(adjustl(sRes)) == 'asynchronous') then; ims_trp_mode_k = TLabMPI_TRP_ASYNCHRONOUS
-    elseif (trim(adjustl(sRes)) == 'sendrecv') then; ims_trp_mode_k = TLabMPI_TRP_SENDRECV
-    else
-        call TLab_Write_ASCII(efile, 'DNS_READ_LOCAL. Wrong ComModeKTranspose option.')
-        call TLab_Stop(DNS_ERROR_OPTION)
-    end if
-#endif
 
 ! ###################################################################
 ! Pressure staggering
@@ -279,9 +255,6 @@ subroutine TLab_Initialize_Parameters(inifile)
 ! ###################################################################
 ! Filters
 ! ###################################################################
-! Dealiasing
-    call FILTER_READBLOCK(bakfile, inifile, 'Dealiasing', Dealiasing)
-
 ! Domain
     call FILTER_READBLOCK(bakfile, inifile, 'Filter', FilterDomain)
     FilterDomainActive(:) = .true.                      ! Variable to eventually allow for control field by field
@@ -298,9 +271,13 @@ subroutine TLab_Initialize_Parameters(inifile)
     call TLab_Write_ASCII(bakfile, '#[Statistics]')
     call TLab_Write_ASCII(bakfile, '#IAvera=<plane1,plane2,...>')
 
-    call ScanFile_Char(bakfile, inifile, 'Statistics', 'IAvera', '1', sRes)
-    nstatavg = MAX_STATS_SPATIAL
-    call LIST_INTEGER(sRes, nstatavg, statavg)
+    call ScanFile_Char(bakfile, inifile, 'Statistics', 'IAvera', 'void', sRes)
+    if (trim(adjustl(sRes)) /= 'void') then
+        ! nstatavg = MAX_STATS_SPATIAL
+        ! call LIST_INTEGER(sRes, nstatavg, statavg)
+        call TLab_Write_ASCII(efile, C_FILE_LOC//'. Initialization of spatial statistics to be updated.')
+        call TLab_Stop(DNS_ERROR_UNDEVELOP)
+    end if
 
 ! ###################################################################
 ! Initialization of array sizes

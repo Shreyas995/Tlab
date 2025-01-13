@@ -7,7 +7,6 @@ subroutine DNS_FILTER()
     use TLAB_VARS, only: imax, jmax, kmax, inb_flow, inb_scal
     use TLAB_VARS, only: imode_eqns, imode_sim
     use TLAB_VARS, only: itime, rtime
-    use TLAB_VARS, only: FilterDomain
     use FDM, only: g
     use TLab_Arrays
     use OPR_FILTERS
@@ -41,7 +40,7 @@ subroutine DNS_FILTER()
     if (imode_sim == DNS_MODE_TEMPORAL .and. mod(itime - nitera_first, nitera_stats) == 0) then
         call FI_RTKE(imax, jmax, kmax, q, wrk3d)
         call AVG_IK_V(imax, jmax, kmax, jmax, wrk3d, Tke0(1), wrk1d)
-        call FI_DISSIPATION(i1, imax,jmax,kmax, q(1,1),q(1,2),q(1,3), txc(1,1), txc(1,2),txc(1,3),txc(1,4),txc(1,5))
+        call FI_DISSIPATION(i1, imax, jmax, kmax, q(1, 1), q(1, 2), q(1, 3), txc(1, 1), txc(1, 2), txc(1, 3), txc(1, 4), txc(1, 5))
         call AVG_IK_V(imax, jmax, kmax, jmax, txc, Eps0(1), wrk1d)
     end if
 
@@ -55,7 +54,7 @@ subroutine DNS_FILTER()
     !    iq_loc = (/ 1,2,3 /)
     ! ENDIF
 
-    if (imode_eqns == DNS_EQNS_TOTAL .or. imode_eqns == DNS_EQNS_INTERNAL) then ! contruct fields per unit volume
+    if (any([DNS_EQNS_TOTAL, DNS_EQNS_INTERNAL] == imode_eqns)) then ! contruct fields per unit volume
         do iq = 1, inb_flow - 1
             q(:, iq) = q(:, iq)*q(:, inb_flow)
         end do
@@ -71,7 +70,7 @@ subroutine DNS_FILTER()
         call OPR_FILTER(imax, jmax, kmax, FilterDomain, s(1, is), txc)
     end do
 
-    if (imode_eqns == DNS_EQNS_TOTAL .or. imode_eqns == DNS_EQNS_INTERNAL) then ! re-contruct fields per unit mass
+    if (any([DNS_EQNS_TOTAL, DNS_EQNS_INTERNAL] == imode_eqns)) then ! re-contruct fields per unit mass
         do iq = 1, inb_flow - 1
             q(:, iq) = q(:, iq)/q(:, inb_flow)
         end do
@@ -88,7 +87,7 @@ subroutine DNS_FILTER()
     if (imode_sim == DNS_MODE_TEMPORAL .and. mod(itime - nitera_first, nitera_stats) == 0) then
         call FI_RTKE(imax, jmax, kmax, q, wrk3d)
         call AVG_IK_V(imax, jmax, kmax, jmax, wrk3d, Tke1(1), wrk1d)
-        call FI_DISSIPATION(i1, imax,jmax,kmax, q(1,1),q(1,2),q(1,3), txc(1,1), txc(1,2),txc(1,3),txc(1,4),txc(1,5))
+        call FI_DISSIPATION(i1, imax, jmax, kmax, q(1, 1), q(1, 2), q(1, 3), txc(1, 1), txc(1, 2), txc(1, 3), txc(1, 4), txc(1, 5))
         call AVG_IK_V(imax, jmax, kmax, jmax, txc, Eps1(1), wrk1d)
 
         write (fname, *) itime; fname = 'kin'//trim(adjustl(fname))

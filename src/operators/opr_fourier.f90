@@ -5,8 +5,8 @@
 
 module OPR_FOURIER
     use TLab_Constants, only: wp, wi, efile
-    use TLAB_VARS, only: isize_txc_field, isize_txc_dimz, isize_wrk2d
-    use TLAB_VARS, only: imax, jmax
+    use TLAB_VARS, only: isize_txc_field, isize_txc_dimx, isize_txc_dimz, isize_wrk2d
+    use TLAB_VARS, only: imax, jmax, kmax
     use FDM, only: g
     use TLab_Arrays, only: wrk1d, wrk2d, wrk3d
     use TLab_Pointers_C, only: c_wrk3d
@@ -15,9 +15,7 @@ module OPR_FOURIER
     use MPI
     use TLabMPI_VARS, only: ims_npro_i, ims_npro_k
     use TLabMPI_VARS, only: ims_offset_i, ims_offset_k, ims_pro, ims_err
-    use TLabMPI_VARS, only: ims_size_i, ims_ds_i, ims_dr_i, ims_ts_i, ims_tr_i
-    use TLabMPI_VARS, only: ims_size_k, ims_ds_k, ims_dr_k, ims_ts_k, ims_tr_k
-    use TLabMPI_PROCS
+    use TLabMPI_Transpose
 #endif
     use, intrinsic :: iso_c_binding, only: c_f_pointer, c_loc
 
@@ -31,7 +29,7 @@ module OPR_FOURIER
     logical :: fft_reordering
 
     integer(wi) k
-    complex(wp), pointer :: c_in(:,:) => null(), c_out(:,:) => null(), c_tmp1(:,:) => null(), c_tmp2(:,:) => null(), c_in1(:,:) => null()
+    complex(wp), pointer :: c_in(:, :) => null(), c_out(:, :) => null(), c_tmp1(:, :) => null(), c_tmp2(:, :) => null(), c_in1(:, :) => null()
 
     ! public :: fft_plan_fy1d, fft_plan_by1d ! vertical spectral pressure filter
     public :: OPR_FOURIER_INITIALIZE
@@ -61,7 +59,11 @@ contains
 
 #ifdef USE_MPI
         if (ims_npro_i > 1) then
-            if (ims_size_i(TLabMPI_I_POISSON1) /= ims_size_i(TLabMPI_I_POISSON2)) then
+            ims_trp_plan_i(TLAB_MPI_TRP_I_POISSON1) = TLabMPI_Trp_TypeI_Create_Devel(imax, isize_txc_dimx, 1, 1, 1, 1, 'Ox FFTW in Poisson solver.')
+            ims_trp_plan_i(TLAB_MPI_TRP_I_POISSON2) = TLabMPI_Trp_TypeI_Create_Devel(imax + 2, isize_txc_dimx, 1, 1, 1, 1, 'extended Ox FFTW in Poisson solver.')
+
+            ! if (ims_size_i(TLAB_MPI_TRP_I_POISSON1) /= ims_size_i(TLAB_MPI_TRP_I_POISSON2)) then
+            if (ims_trp_plan_i(TLAB_MPI_TRP_I_POISSON1)%nlines /= ims_trp_plan_i(TLAB_MPI_TRP_I_POISSON2)%nlines) then
                 call TLab_Write_ASCII(efile, __FILE__//'. Error in the size in the transposition arrays.')
                 call TLab_Stop(DNS_ERROR_UNDEVELOP)
             end if
@@ -73,7 +75,10 @@ contains
         ! -----------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_k > 1) then
-            isize_fft_z = ims_size_k(TLabMPI_K_POISSON)/2 ! divide by 2 bcs. we work w complex #
+            ims_trp_plan_k(TLAB_MPI_TRP_K_POISSON) = TLabMPI_Trp_TypeK_Create_Devel(kmax, isize_txc_dimz, 1, 1, 1, 1, 'Oz FFTW in Poisson solver.')
+            
+            ! isize_fft_z = ims_size_k(TLAB_MPI_TRP_K_POISSON)/2 ! divide by 2 bcs. we work w complex #
+            isize_fft_z = ims_trp_plan_k(TLAB_MPI_TRP_K_POISSON)%nlines/2 ! divide by 2 bcs. we work w complex #
         else
 #endif
             isize_fft_z = (imax/2 + 1)*(jmax + 2)
@@ -108,7 +113,8 @@ contains
         ! -----------------------------------------------------------------------
 #ifdef USE_MPI
         if (ims_npro_i > 1) then
-            isize_fft_x = ims_size_i(TLabMPI_I_POISSON1)
+            ! isize_fft_x = ims_size_i(TLAB_MPI_TRP_I_POISSON1)
+            isize_fft_x = ims_trp_plan_i(TLAB_MPI_TRP_I_POISSON1)%nlines
         else
 #endif
             isize_fft_x = jmax
@@ -367,8 +373,9 @@ contains
         if (ims_npro_i > 1) then
 
             ! Pass memory address from complex array to real array
-            id = TLabMPI_I_POISSON1
-            call c_f_pointer(c_loc(wrk3d), wrk1, shape=[(nx/2 + 1)*ims_npro_i, ims_size_i(id)])
+            id = TLAB_MPI_TRP_I_POISSON1
+            ! call c_f_pointer(c_loc(wrk3d), wrk1, shape=[(nx/2 + 1)*ims_npro_i, ims_size_i(id)])
+            call c_f_pointer(c_loc(wrk3d), wrk1, shape=[(nx/2 + 1)*ims_npro_i, ims_trp_plan_i(id)%nlines])
             call c_f_pointer(c_loc(wrk3d), wrk2, shape=[nx/2 + 1, (ny + 2)*nz])
             call c_f_pointer(c_loc(out), r_out, shape=[isize_txc_field])
             out_aux(1:nx/2 + 1, 1:(ny + 2)*nz) => out(1:isize_txc_dimz/2*nz, 1)
@@ -378,15 +385,16 @@ contains
             in(:, (ny + 1)*nz + 1:(ny + 2)*nz) = in_bcs_ht(:, 1:nz)
 
             ! Transpose array a into b
-            id = TLabMPI_I_POISSON1
-            call TLabMPI_TRPF_I(in, r_out, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            id = TLAB_MPI_TRP_I_POISSON1
+            call TLabMPI_TransposeI_Forward(in, r_out, id)
 
-            ! ims_size_i(id) FFTWs
+            ! ims_trp_plan_i(id)%nlines FFTWs
             call dfftw_execute_dft_r2c(fft_plan_fx, r_out, wrk1)
 
             ! reorganize wrk1 (FFTW make a stride in wrk1 already before)
-            id = TLabMPI_I_POISSON1
-            do k = 1, ims_size_i(id)
+            id = TLAB_MPI_TRP_I_POISSON1
+            ! do k = 1, ims_size_i(id)
+            do k = 1, ims_trp_plan_i(id)%nlines
                 inew = (nx/2 + 1)*ims_npro_i
                 iold = g(1)%size/2 + 1
                 wrk1(inew, k) = wrk1(iold, k)
@@ -400,8 +408,8 @@ contains
             end do
 
             ! Transpose array back
-            id = TLabMPI_I_POISSON2
-            call TLabMPI_TRPB_I(wrk3d, r_out, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            id = TLAB_MPI_TRP_I_POISSON2
+            call TLabMPI_TransposeI_Backward(wrk3d, r_out, id)
 
             ! Reorganize array out. Backwards line-by-line to overwrite freed space.
             wrk2(:, 1:2*nz) = out_aux(:, ny*nz + 1:ny*nz + 2*nz)        ! Save BCs data in aux array
@@ -480,18 +488,19 @@ contains
             do k = 2, nz
                 ip = 1
                 do j = 1, ny
-                    in_aux(:, j + ny*(k - 1)) = in(ip:ip + isize_line - 1, k) 
+                    in_aux(:, j + ny*(k - 1)) = in(ip:ip + isize_line - 1, k)
                     ip = ip + isize_line
                 end do
             end do
 
             ! Transpose array
-            id = TLabMPI_I_POISSON2
-            call TLabMPI_TRPF_I(r_in, out, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            id = TLAB_MPI_TRP_I_POISSON2
+            call TLabMPI_TransposeI_Forward(r_in, out, id)
 
             ! reorganize a (FFTW make a stride in a already before)
-            id = TLabMPI_I_POISSON1
-            do k = 1, ims_size_i(id)
+            id = TLAB_MPI_TRP_I_POISSON1
+            ! do k = 1, ims_size_i(id)
+            do k = 1, ims_trp_plan_i(id)%nlines
                 do ip = 2, ims_npro_i
                     do i = 1, nx/2
                         iold = (ip - 1)*(nx/2 + 1) + i
@@ -508,8 +517,8 @@ contains
             call dfftw_execute_dft_c2r(fft_plan_bx, c_out, r_in)
 
             ! Transpose array wrk into out
-            id = TLabMPI_I_POISSON1
-            call TLabMPI_TRPB_I(r_in, out, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            id = TLAB_MPI_TRP_I_POISSON1
+            call TLabMPI_TransposeI_Backward(r_in, out, id)
 
             nullify (in_aux, r_in, c_out)
 
@@ -535,7 +544,8 @@ contains
     subroutine OPR_FOURIER_F_Z_EXEC(in, out)
 
 #ifdef USE_MPI
-        complex(wp), dimension(ims_size_k(TLabMPI_K_POISSON)/2, g(3)%size), target :: in, out
+        ! complex(wp), dimension(ims_size_k(TLAB_MPI_TRP_K_POISSON)/2, g(3)%size), target :: in, out
+        complex(wp), dimension(ims_trp_plan_k(TLAB_MPI_TRP_K_POISSON)%nlines/2, g(3)%size), target :: in, out
 #else
         complex(wp), dimension(isize_txc_dimz/2, g(3)%size), target :: in, out
 #endif
@@ -552,14 +562,14 @@ contains
         ! #######################################################################
         ! Forward complex FFT in z
 #ifdef USE_MPI
-        id = TLabMPI_K_POISSON
+        id = TLAB_MPI_TRP_K_POISSON
 
         if (ims_npro_k > 1) then
             ! Pass memory address from complex array to real array
             call c_f_pointer(c_loc(in), r_in, shape=[isize_txc_field])
             call c_f_pointer(c_loc(out), r_out, shape=[isize_txc_field])
 
-            call TLabMPI_TRPF_K(r_in, r_out, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            call TLabMPI_TransposeK_Forward(r_in, r_out, id)
             p_org => out
             p_dst => in
         else
@@ -589,7 +599,7 @@ contains
 
 #ifdef USE_MPI
         if (ims_npro_k > 1) then
-            call TLabMPI_TRPB_K(r_in, r_out, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            call TLabMPI_TransposeK_Backward(r_in, r_out, id)
             nullify (r_in, r_out)
         end if
 #endif
@@ -605,7 +615,8 @@ contains
     subroutine OPR_FOURIER_B_Z_EXEC(in, out)
 
 #ifdef USE_MPI
-        complex(wp), dimension(ims_size_k(TLabMPI_K_POISSON)/2, g(3)%size), target :: in, out
+        ! complex(wp), dimension(ims_size_k(TLAB_MPI_TRP_K_POISSON)/2, g(3)%size), target :: in, out
+        complex(wp), dimension(ims_trp_plan_k(TLAB_MPI_TRP_K_POISSON)%nlines/2, g(3)%size), target :: in, out
 #else
         complex(wp), dimension(isize_txc_dimz/2, g(3)%size), target :: in, out
 #endif
@@ -622,14 +633,14 @@ contains
         ! #######################################################################
         ! Forward complex FFT in z
 #ifdef USE_MPI
-        id = TLabMPI_K_POISSON
+        id = TLAB_MPI_TRP_K_POISSON
 
         if (ims_npro_k > 1) then
             ! Pass memory address from complex array to real array
             call c_f_pointer(c_loc(in), r_in, shape=[isize_txc_field])
             call c_f_pointer(c_loc(out), r_out, shape=[isize_txc_field])
 
-            call TLabMPI_TRPF_K(r_in, r_out, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            call TLabMPI_TransposeK_Forward(r_in, r_out, id)
             p_org => out
             p_dst => in
         else
@@ -659,7 +670,7 @@ contains
 
 #ifdef USE_MPI
         if (ims_npro_k > 1) then
-            call TLabMPI_TRPB_K(r_in, r_out, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            call TLabMPI_TransposeK_Backward(r_in, r_out, id)
             nullify (r_in, r_out)
         end if
 #endif

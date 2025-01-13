@@ -3,11 +3,11 @@
 ! from dns_const.h
 
 ! from dns_const_mpi.h
-#define TLabMPI_K_PARTIAL   1 ! tags and sizes for MPI data
-#define TLabMPI_I_PARTIAL   1
+#define TLAB_MPI_TRP_K_PARTIAL   1 ! tags and sizes for MPI data
+#define TLAB_MPI_TRP_I_PARTIAL   1
 
-#define TLabMPI_K_MAXTYPES 10
-#define TLabMPI_I_MAXTYPES  6
+#define TLAB_MPI_TRP_K_MAXTYPES 10
+#define TLAB_MPI_TRP_I_MAXTYPES  6
 
 module DNS_MPI
     implicit none
@@ -115,7 +115,8 @@ program VMPI_RTRANSPOSE
         stop
     end if
 
-    call TLabMPI_Initialize()
+    call TLabMPI_Initialize(ifile)
+call TLabMPI_Transpose_Initialize(ifile)
 
     allocate (a(imax*jmax*kmax, 18)) ! Number of 3d arrays commonly used in the code
     allocate (wrk3d(imax*jmax*kmax))
@@ -129,14 +130,14 @@ program VMPI_RTRANSPOSE
         write (*, *) 'Executing everything once to get caches / stack / network in production state'
 
     if (ims_npro_k > 1) then
-        id = TLabMPI_K_PARTIAL
-        call TLabMPI_TRPF_K(a(1, 1), wrk3d, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
-        call TLabMPI_TRPB_K(wrk3d, a(1, 2), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+        id = TLAB_MPI_TRP_K_PARTIAL
+        call TLabMPI_TransposeK_Forward(a(1, 1), wrk3d, id)
+        call TLabMPI_TransposeK_Backward(wrk3d, a(1, 2), id)
     end if
     if (ims_npro_i > 1) then
-        id = TLabMPI_I_PARTIAL
-        call TLabMPI_TRPF_I(a(1, 1), wrk3d, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
-        call TLabMPI_TRPB_I(wrk3d, a(1, 2), ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+        id = TLAB_MPI_TRP_I_PARTIAL
+        call TLabMPI_TransposeI_Forward(a(1, 1), wrk3d, id)
+        call TLabMPI_TransposeI_Backward(wrk3d, a(1, 2), id)
     end if
 
     if (IMS_PRO == 0) then
@@ -159,12 +160,12 @@ program VMPI_RTRANSPOSE
 ! Transposition along OX
 ! -------------------------------------------------------------------
         if (ims_npro_i > 1) then
-            id = TLabMPI_I_PARTIAL
+            id = TLAB_MPI_TRP_I_PARTIAL
 
             call system_clock(t_srt, PROC_CYCLES, MAX_CYCLES)
 
-            call TLabMPI_TRPF_I(a(1, 1), wrk3d, ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
-            call TLabMPI_TRPB_I(wrk3d, a(1, 2), ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+            call TLabMPI_TransposeI_Forward(a(1, 1), wrk3d, id)
+            call TLabMPI_TransposeI_Backward(wrk3d, a(1, 2), id)
 
             call system_clock(t_end, PROC_CYCLES, MAX_CYCLES)
 
@@ -196,12 +197,12 @@ program VMPI_RTRANSPOSE
 ! Transposition along OZ
 ! -------------------------------------------------------------------
         if (ims_npro_k > 1) then
-            id = TLabMPI_K_PARTIAL
+            id = TLAB_MPI_TRP_K_PARTIAL
 
             call system_clock(t_srt, PROC_CYCLES, MAX_CYCLES)
 
-            call TLabMPI_TRPF_K(a(1, 1), wrk3d, ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
-            call TLabMPI_TRPB_K(wrk3d, a(1, 2), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+            call TLabMPI_TransposeK_Forward(a(1, 1), wrk3d, id)
+            call TLabMPI_TransposeK_Backward(wrk3d, a(1, 2), id)
 
             call system_clock(t_end, PROC_CYCLES, MAX_CYCLES)
 
@@ -255,18 +256,18 @@ subroutine TLabMPI_Initialize()
 
 ! #######################################################################
     allocate (ims_map_i(ims_npro_i))
-    allocate (ims_size_i(TLabMPI_I_MAXTYPES))
-    allocate (ims_ds_i(ims_npro_i, TLabMPI_I_MAXTYPES))
-    allocate (ims_dr_i(ims_npro_i, TLabMPI_I_MAXTYPES))
-    allocate (ims_ts_i(ims_npro_i, TLabMPI_I_MAXTYPES))
-    allocate (ims_tr_i(ims_npro_i, TLabMPI_I_MAXTYPES))
+    allocate (ims_size_i(TLAB_MPI_TRP_I_MAXTYPES))
+    allocate (ims_ds_i(ims_npro_i, TLAB_MPI_TRP_I_MAXTYPES))
+    allocate (ims_dr_i(ims_npro_i, TLAB_MPI_TRP_I_MAXTYPES))
+    allocate (ims_ts_i(ims_npro_i, TLAB_MPI_TRP_I_MAXTYPES))
+    allocate (ims_tr_i(ims_npro_i, TLAB_MPI_TRP_I_MAXTYPES))
 
     allocate (ims_map_k(ims_npro_k))
-    allocate (ims_size_k(TLabMPI_K_MAXTYPES))
-    allocate (ims_ds_k(ims_npro_k, TLabMPI_K_MAXTYPES))
-    allocate (ims_dr_k(ims_npro_k, TLabMPI_K_MAXTYPES))
-    allocate (ims_ts_k(ims_npro_k, TLabMPI_K_MAXTYPES))
-    allocate (ims_tr_k(ims_npro_k, TLabMPI_K_MAXTYPES))
+    allocate (ims_size_k(TLAB_MPI_TRP_K_MAXTYPES))
+    allocate (ims_ds_k(ims_npro_k, TLAB_MPI_TRP_K_MAXTYPES))
+    allocate (ims_dr_k(ims_npro_k, TLAB_MPI_TRP_K_MAXTYPES))
+    allocate (ims_ts_k(ims_npro_k, TLAB_MPI_TRP_K_MAXTYPES))
+    allocate (ims_tr_k(ims_npro_k, TLAB_MPI_TRP_K_MAXTYPES))
 
     allocate (ims_plan_trps_i(ims_npro_i))
     allocate (ims_plan_trpr_i(ims_npro_i))
@@ -310,18 +311,18 @@ subroutine TLabMPI_Initialize()
 
     if (ims_npro_i > 1) then
 !  CALL TLab_Write_ASCII(lfile,'Initializing MPI types for Ox derivatives.')
-        id = TLabMPI_I_PARTIAL
+        id = TLAB_MPI_TRP_I_PARTIAL
         npage = kmax*jmax
-        call TLabMPI_TYPE_I(ims_npro_i, imax, npage, i1, i1, i1, i1, &
-                             ims_size_i(id), ims_ds_i(1, id), ims_dr_i(1, id), ims_ts_i(1, id), ims_tr_i(1, id))
+        call TLabMPI_TypeI_Create(ims_npro_i, imax, npage, i1, i1, i1, i1, &
+                             ims_size_i(id), id)
     end if
 
     if (ims_npro_k > 1) then
 !  CALL TLab_Write_ASCII(lfile,'Initializing MPI types for Oz derivatives.')
-        id = TLabMPI_K_PARTIAL
+        id = TLAB_MPI_TRP_K_PARTIAL
         npage = imax*jmax
-        call TLabMPI_TYPE_K(ims_npro_k, kmax, npage, i1, i1, i1, i1, &
-                             ims_size_k(id), ims_ds_k(1, id), ims_dr_k(1, id), ims_ts_k(1, id), ims_tr_k(1, id))
+        call TLabMPI_TypeK_Create(ims_npro_k, kmax, npage, i1, i1, i1, i1, &
+                             ims_size_k(id), id)
     end if
 
 ! ######################################################################
@@ -351,14 +352,14 @@ subroutine TLabMPI_Initialize()
         call MPI_BARRIER(MPI_COMM_WORLD, ims_err)
     end do
 
-    call TLabMPI_TAGRESET
+    call TLabMPI_TagReset
 
     return
 end subroutine TLabMPI_Initialize
 
 ! ###################################################################
 ! ###################################################################
-subroutine TLabMPI_TYPE_I(ims_npro, imax, npage, nd, md, n1, n2, &
+subroutine TLabMPI_TypeI_Create(ims_npro, imax, npage, nd, md, n1, n2, &
                            nsize, sdisp, rdisp, stype, rtype)
 
     use TLabMPI_VARS, only: ims_pro
@@ -419,11 +420,11 @@ subroutine TLabMPI_TYPE_I(ims_npro, imax, npage, nd, md, n1, n2, &
     end do
 
     return
-end subroutine TLabMPI_TYPE_I
+end subroutine TLabMPI_TypeI_Create
 
 !########################################################################
 !########################################################################
-subroutine TLabMPI_TYPE_K(ims_npro, nmax, npage, nd, md, n1, n2, &
+subroutine TLabMPI_TypeK_Create(ims_npro, nmax, npage, nd, md, n1, n2, &
                            nsize, sdisp, rdisp, stype, rtype)
 
     use TLabMPI_VARS, only: ims_pro
@@ -483,11 +484,11 @@ subroutine TLabMPI_TYPE_K(ims_npro, nmax, npage, nd, md, n1, n2, &
     end do
 
     return
-end subroutine TLabMPI_TYPE_K
+end subroutine TLabMPI_TypeK_Create
 
 ! ###################################################################
 ! ###################################################################
-subroutine TLabMPI_TRPF_K(a, b, dsend, drecv, tsend, trecv)
+subroutine TLabMPI_TransposeK_Forward(a, b, dsend, drecv, tsend, trecv)
 
     use TLabMPI_VARS, only: ims_npro_k
     use TLabMPI_VARS, only: ims_comm_z
@@ -538,14 +539,14 @@ subroutine TLabMPI_TRPF_K(a, b, dsend, drecv, tsend, trecv)
     if (.not. ims_trp_blocking) &
         call MPI_WAITALL(ims_npro_k*2, mpireq(1:), status(1, 1), ims_err)
 
-    call TLabMPI_TAGUPDT
+    call TLabMPI_TagUpdate
 
     return
-end subroutine TLabMPI_TRPF_K
+end subroutine TLabMPI_TransposeK_Forward
 
 !########################################################################
 !########################################################################
-subroutine TLabMPI_TRPF_I(a, b, dsend, drecv, tsend, trecv)
+subroutine TLabMPI_TransposeI_Forward(a, b, dsend, drecv, tsend, trecv)
 
     use TLabMPI_VARS, only: ims_npro_i
     use TLabMPI_VARS, only: ims_comm_x
@@ -590,14 +591,14 @@ subroutine TLabMPI_TRPF_I(a, b, dsend, drecv, tsend, trecv)
     if (.not. ims_trp_blocking) &
         call MPI_WAITALL(ims_npro_i*2, mpireq(1:), status(1, 1), ims_err)
 
-    call TLabMPI_TAGUPDT
+    call TLabMPI_TagUpdate
 
     return
-end subroutine TLabMPI_TRPF_I
+end subroutine TLabMPI_TransposeI_Forward
 
 !########################################################################
 !########################################################################
-subroutine TLabMPI_TRPB_K(b, a, dsend, drecv, tsend, trecv)
+subroutine TLabMPI_TransposeK_Backward(b, a, dsend, drecv, tsend, trecv)
 
     use TLabMPI_VARS, only: ims_npro_k
     use TLabMPI_VARS, only: ims_comm_z
@@ -651,14 +652,14 @@ subroutine TLabMPI_TRPB_K(b, a, dsend, drecv, tsend, trecv)
     if (.not. ims_trp_blocking) &
         call MPI_WAITALL(ims_npro_k*2, mpireq(1:), status(1, 1), ims_err)
 
-    call TLabMPI_TAGUPDT
+    call TLabMPI_TagUpdate
 
     return
-end subroutine TLabMPI_TRPB_K
+end subroutine TLabMPI_TransposeK_Backward
 
 !########################################################################
 !########################################################################
-subroutine TLabMPI_TRPB_I(b, a, dsend, drecv, tsend, trecv)
+subroutine TLabMPI_TransposeI_Backward(b, a, dsend, drecv, tsend, trecv)
 
     use TLabMPI_VARS, only: ims_npro_i
     use TLabMPI_VARS, only: ims_comm_x
@@ -699,14 +700,14 @@ subroutine TLabMPI_TRPB_I(b, a, dsend, drecv, tsend, trecv)
     if (.not. ims_trp_blocking) &
         call MPI_WAITALL(ims_npro_i*2, mpireq(1:), status(1, 1), ims_err)
 
-    call TLabMPI_TAGUPDT
+    call TLabMPI_TagUpdate
 
     return
-end subroutine TLabMPI_TRPB_I
+end subroutine TLabMPI_TransposeI_Backward
 
 !########################################################################
 !########################################################################
-subroutine TLabMPI_TAGUPDT
+subroutine TLabMPI_TagUpdate
 
     use TLabMPI_VARS, only: ims_tag
 
@@ -715,15 +716,15 @@ subroutine TLabMPI_TAGUPDT
     ims_tag = ims_tag + 1
 
     if (ims_tag > 32000) then
-        call TLabMPI_TAGRESET
+        call TLabMPI_TagReset
     end if
 
     return
-end subroutine TLabMPI_TAGUPDT
+end subroutine TLabMPI_TagUpdate
 
 !########################################################################
 !########################################################################
-subroutine TLabMPI_TAGRESET
+subroutine TLabMPI_TagReset
 
     use TLabMPI_VARS, only: ims_tag
 
@@ -732,4 +733,4 @@ subroutine TLabMPI_TAGRESET
     ims_tag = 0
 
     return
-end subroutine TLabMPI_TAGRESET
+end subroutine TLabMPI_TagReset
