@@ -57,5 +57,10 @@ module TLAB_VARS
     real(wp) :: rossby                              ! Coriolis force
     real(wp) :: stokes                              ! particle inertial effects
     real(wp) :: settling                            ! sedimentation effects
+    
+! ###################################################################
+! Timings
+! ###################################################################
+    real(wp) :: trans_time 
 
 end module TLAB_VARS

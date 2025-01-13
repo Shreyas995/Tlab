@@ -10,13 +10,16 @@ program VBURGERS
   use TLab_Memory, only : TLab_Initialize_Memory
 #ifdef USE_MPI
   use MPI
-  use TLabMPI_PROCS
+!   use TLabMPI_PROCS
+  use TLabMPI_PROCS, only: TLabMPI_Initialize
+  use TLabMPI_Transpose, only: TLabMPI_Transpose_Initialize
   use TLabMPI_VARS
 #endif
   use IO_FIELDS
   use OPR_PARTIAL
   use OPR_BURGERS
   use OPR_FILTERS
+  use TLab_Background, only: TLab_Initialize_Background
   USE FDM, only : g, FDM_Initialize
   implicit none
 
@@ -59,7 +62,8 @@ program VBURGERS
 
   call Tlab_Initialize_Parameters(ifile) 
 #ifdef USE_MPI
-  call TLabMPI_Initialize()
+  call TLabMPI_Initialize(ifile)
+  call TLabMPI_Transpose_Initialize(ifile)
 #endif
   call NavierStokes_Initialize_Parameters(ifile) 
   
@@ -78,13 +82,15 @@ program VBURGERS
   call FDM_INITIALIZE(y, g(2), wrk1d(:,2),wrk1d(:,4))
   call FDM_INITIALIZE(z, g(3), wrk1d(:,3),wrk1d(:,4))
 
-  call Tlab_Initialize_Background() 
+  call Tlab_Initialize_Background(ifile) 
+
+  call OPR_Burgers_Initialize(ifile)
 
   bcs = 0
 
-  do ig = 1, 3
-     call OPR_FILTER_INITIALIZE(g(ig), Dealiasing(ig))
-  end do
+!   do ig = 1, 3
+!      call OPR_FILTER_INITIALIZE(g(ig), Dealiasing(ig))
+!   end do
 
   ! ###################################################################
   ! Define forcing term
