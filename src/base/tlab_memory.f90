@@ -265,6 +265,18 @@ contains
     end subroutine TLab_Set_Pointers_C
 
     ! ######################################################################
+    subroutine Tlab_Allocate_Real_LONG(C_FILE_LOC, a, dims, s)
+        character(len=*), intent(in) :: C_FILE_LOC, s
+        real(8), allocatable, intent(inout) :: a(:)
+        integer(8), intent(in) :: dims(1)
+
+        !#####################################################################
+        call Tlab_Allocate_Log_LONG(lfile, dims, s)
+        allocate (a(dims(1)), stat=ierr)
+        call TLAB_ALLOCATE_ERR(C_FILE_LOC, efile, s)
+        
+    end subroutine Tlab_Allocate_Real_LONG
+
     ! ######################################################################
 #ifndef NO_ASSUMED_RANKS
     subroutine TLab_Allocate_Real(C_FILE_LOC, a, dims, s)
@@ -295,17 +307,17 @@ contains
     end subroutine TLab_Allocate_Real
 
 ! ### DOUBLE ALLOCATION ROUTINES FOR LARGE 1D ARRAYS
-    subroutine Tlab_Allocate_Real_LONG(C_FILE_LOC, a, dims, s)
-        character(len=*), intent(in) :: C_FILE_LOC, s
-        real(8), allocatable, intent(inout) :: a(:)
-        integer(8), intent(in) :: dims(1)
+    ! subroutine Tlab_Allocate_Real_LONG(C_FILE_LOC, a, dims, s)
+    !     character(len=*), intent(in) :: C_FILE_LOC, s
+    !     real(8), allocatable, intent(inout) :: a(:)
+    !     integer(8), intent(in) :: dims(1)
 
-        !#####################################################################
-        call Tlab_Allocate_Log_LONG(lfile, dims, s)
-        allocate (a(dims(1)), stat=ierr)
-        call TLAB_ALLOCATE_ERR(C_FILE_LOC, efile, s)
+    !     !#####################################################################
+    !     call Tlab_Allocate_Log_LONG(lfile, dims, s)
+    !     allocate (a(dims(1)), stat=ierr)
+    !     call TLAB_ALLOCATE_ERR(C_FILE_LOC, efile, s)
         
-    end subroutine Tlab_Allocate_Real_LONG
+    ! end subroutine Tlab_Allocate_Real_LONG
 
     ! ######################################################################
     ! ######################################################################
