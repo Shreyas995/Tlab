@@ -21,7 +21,7 @@ if ( ${PROFILE} STREQUAL "TRUE" )
  
 
 # compiler for parallel build and hybrid flags	  
-if ( ${BUILD_TYPE} STREQUAL "PARALLEL" OR ${BUILD_TYPE} STREQUAL "NONBLOCKING" )
+if ( ${BUILD_TYPE} STREQUAL "PARALLEL" )
    set(ENV{FC} ftn) 
 
    add_definitions(-DUSE_MPI -DUSE_MPI_IO -DUSE_NETCDF -DUSE_ALLTOALL)
@@ -34,6 +34,10 @@ if ( ${BUILD_TYPE} STREQUAL "PARALLEL" OR ${BUILD_TYPE} STREQUAL "NONBLOCKING" )
 # compiler for serial build
 else( ${BUILD_TYPE} STREQUAL "SERIAL" )
   set(ENV{FC} ftn )
+  if ( ${HYBRID} STREQUAL "TRUE" )
+    set(USER_omp_FLAGS " -fopenmp " )
+    add_definitions(-DUSE_OPENMP)
+  endif()
 endif()     
 
 
@@ -54,14 +58,3 @@ set(NCDF_LIB   "-lnetcdff")
 set(LIBS             "${NCDF_LIB} ${FFTW_LIB} -lm")
 
 set(GNU_SED "gsed")
-
-if ( ${BUILD_TYPE} STREQUAL "NONBLOCKING" ) # use NB3DFFT library
-  add_definitions(-DUSE_PSFFT)
-
-  set(PSFFT_INCLUDE_DIR   "$ENV{HOME}/nb3dFFT/src")
-  set(PSFFT_INCLUDE_DIR   ${PSFFT_INCLUDE_DIR} "$ENV{HOME}/nb3dFFT/include")
-  set(PSFFT_LIB           "$ENV{HOME}/nb3dFFT/lib/libnb3dfft.a")
-  set(PSFFT_LINK_FLAGS    "-qopenmp")
-  set(PSFFT_COMPILE_FLAGS "-qopenmp")
-
-endif()
