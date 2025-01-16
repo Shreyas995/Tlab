@@ -22,12 +22,10 @@ if ( ${PROFILE} STREQUAL "TRUE" )
 
 # compiler for parallel build and hybrid flags	  
 if ( ${BUILD_TYPE} STREQUAL "PARALLEL" )
-   set(ENV{FC} ftn) 
-
-   add_definitions(-DUSE_MPI -DUSE_MPI_IO -DUSE_NETCDF -DUSE_ALLTOALL)
-
+   set(ENV{FC} ftn) # instead of running "export FC=ftn" in the terminal
+   add_definitions(-DUSE_MPI -DUSE_MPI_IO -DUSE_ALLTOALL) # -DUSE_NETCDF (already later defined)
    if ( ${HYBRID} STREQUAL "TRUE" )
-     set(USER_omp_FLAGS " -fopenmp " )
+     set(USER_omp_FLAGS " -fopenmp -L/opt/rh/gcc-toolset-12/root/usr/lib/gcc/x86_64-redhat-linux/12" )
      add_definitions(-DUSE_OPENMP) 
    endif()
 
@@ -35,7 +33,7 @@ if ( ${BUILD_TYPE} STREQUAL "PARALLEL" )
 else( ${BUILD_TYPE} STREQUAL "SERIAL" )
   set(ENV{FC} ftn )
   if ( ${HYBRID} STREQUAL "TRUE" )
-    set(USER_omp_FLAGS " -fopenmp " )
+    set(USER_omp_FLAGS " -fopenmp -L/opt/rh/gcc-toolset-12/root/usr/lib/gcc/x86_64-redhat-linux/12" ) # last flag needed at least on AAC7
     add_definitions(-DUSE_OPENMP)
   endif()
 endif()     
@@ -51,10 +49,9 @@ if ( NOT CMAKE_BUILD_TYPE )
   set(CMAKE_BUILD_TYPE RELEASE)  
 endif() 
 
-add_definitions(-DNO_ASSUMED_RANKS -DUSE_FFTW -DHLRS_HAWK -DUSE_NETCDF) # -DUSE_BLAS -DUSE_MKL)
-set(FFTW_LIB   "-lfftw3")
-set(NCDF_LIB   "-lnetcdff") 
-#set(FFTW_INCLUDE_DIR "/opt/hlrs/spack/rev-004_2020-06-17/fftw/3.3.8-clang-9.0.0-2buapgdw/include/")
-set(LIBS             "${NCDF_LIB} ${FFTW_LIB} -lm")
+add_definitions(-DNO_ASSUMED_RANKS -DUSE_FFTW -DUSE_NETCDF) # -DHLRS_HAWK -DUSE_BLAS -DUSE_MKL)
+set(FFTW_LIB "-lfftw3")
+set(NCDF_LIB "-lnetcdff") 
+set(LIBS     "${NCDF_LIB} ${FFTW_LIB} -lm")
 
-set(GNU_SED "gsed")
+set(GNU_SED  "gsed")
