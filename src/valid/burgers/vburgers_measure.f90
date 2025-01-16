@@ -2,15 +2,14 @@
 
 program VBURGERS
 
-  use TLAB_CONSTANTS
-  use TLAB_VARS
-  use TLAB_Workflow
-  use TLAB_ARRAYS
-  use TLAB_POINTERS_3D, only: tmp1
+  use TLab_Constants
+  use TLab_Vars
+  use TLab_Workflow
+  use TLab_Arrays
+  use TLab_Pointers_3D, only: tmp1
   use TLab_Memory, only : TLab_Initialize_Memory
 #ifdef USE_MPI
   use MPI
-!   use TLabMPI_PROCS
   use TLabMPI_PROCS, only: TLabMPI_Initialize
   use TLabMPI_Transpose, only: TLabMPI_Transpose_Initialize
   use TLabMPI_VARS
@@ -58,9 +57,9 @@ program VBURGERS
 
   
   ! ###################################################################
-  call TLAB_START()
+  call TLab_START()
 
-  call Tlab_Initialize_Parameters(ifile) 
+  call TLab_Initialize_Parameters(ifile) 
 #ifdef USE_MPI
   call TLabMPI_Initialize(ifile)
   call TLabMPI_Transpose_Initialize(ifile)
@@ -78,19 +77,14 @@ program VBURGERS
   visc = 1.0_wp/big_wp    ! inviscid
 
   call IO_READ_GRID(gfile, g(1)%size, g(2)%size, g(3)%size, g(1)%scale, g(2)%scale, g(3)%scale, wrk1d(:,1), wrk1d(:,2), wrk1d(:,3))
+  
   call FDM_INITIALIZE(x, g(1), wrk1d(:,1),wrk1d(:,4))
   call FDM_INITIALIZE(y, g(2), wrk1d(:,2),wrk1d(:,4))
   call FDM_INITIALIZE(z, g(3), wrk1d(:,3),wrk1d(:,4))
-
-  call Tlab_Initialize_Background(ifile) 
-
+  call TLab_Initialize_Background(ifile) 
   call OPR_Burgers_Initialize(ifile)
 
   bcs = 0
-
-!   do ig = 1, 3
-!      call OPR_FILTER_INITIALIZE(g(ig), Dealiasing(ig))
-!   end do
 
   ! ###################################################################
   ! Define forcing term
@@ -172,5 +166,5 @@ program VBURGERS
   PRINT 101, 'Addition',add_time/nrun, 100*add_time/SUM(runtime) 
 100 FORMAT('T MEAN|MIN|MAX [s] : ', F8.4, 1x, F8.4, 1x , F8.4)
 101 FORMAT('Time per run in ',A9,'[s]:', F8.4,'s (', F3.0,'%)') 
-  call TLAB_STOP(0)
+  call TLab_STOP(0)
 end program VBURGERS
