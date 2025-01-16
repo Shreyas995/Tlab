@@ -68,9 +68,9 @@ subroutine TLab_Transpose(a, nra, nca, ma, b, mb)
        !$omp end target teams distribute parallel do
     endif
 #else 
-!$omp parallel default(none) &
-!$omp private(k,j,jj,kk,srt,end,siz,last_k,last_j) &
-!$omp shared(a,b,nca,nra)
+!!$omp parallel default(none) &
+!!$omp private(k,j,jj,kk,srt,end,siz,last_k,last_j) &
+!!$omp shared(a,b,nca,nra)
 
     call TLab_OMP_PARTITION(nca, srt, end, siz)
 
@@ -101,7 +101,7 @@ subroutine TLab_Transpose(a, nra, nca, ma, b, mb)
         end do
     end do
 
-!$omp end parallel
+!!$omp end parallel
 #endif
     CALL SYSTEM_CLOCK(clock_1)
     trans_time = trans_time + real(clock_1 - clock_0)/ clock_cycle 
@@ -133,9 +133,9 @@ subroutine TLab_Transpose_INT1(a, nra, nca, ma, b, mb)
     integer(wi) last_k, last_j
 
 ! -------------------------------------------------------------------
-!$omp parallel default(none) &
-!$omp private(k,j,jj,kk,srt,end,siz,last_k,last_j) &
-!$omp shared(a,b,nca,nra)
+!!$omp parallel default(none) &
+!!$omp private(k,j,jj,kk,srt,end,siz,last_k,last_j) &
+!!$omp shared(a,b,nca,nra)
 
     call TLab_OMP_PARTITION(nca, srt, end, siz)
 
@@ -166,7 +166,7 @@ subroutine TLab_Transpose_INT1(a, nra, nca, ma, b, mb)
         end do
     end do
 
-!$omp end parallel
+!!$omp end parallel
 
     return
 end subroutine TLab_Transpose_INT1
@@ -199,9 +199,9 @@ subroutine TLab_Transpose_COMPLEX(a, nra, nca, ma, b, mb)
     integer(wi) last_k, last_j
 
 ! -------------------------------------------------------------------
-!$omp parallel default(none) &
-!$omp private(k,j,jj,kk,srt,end,siz,last_k,last_j) &
-!$omp shared(a,b,nca,nra)
+!!$omp parallel default(none) &
+!!$omp private(k,j,jj,kk,srt,end,siz,last_k,last_j) &
+!!$omp shared(a,b,nca,nra)
 
     call TLab_OMP_PARTITION(nca, srt, end, siz)
 
@@ -232,7 +232,7 @@ subroutine TLab_Transpose_COMPLEX(a, nra, nca, ma, b, mb)
         end do
     end do
 
-!$omp end parallel
+!!$omp end parallel
     return
 end subroutine TLab_Transpose_COMPLEX
 

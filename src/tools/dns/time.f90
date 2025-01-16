@@ -230,11 +230,11 @@ contains
                 rkm_substep < rkm_endstep) then
 
 #ifdef USE_BLAS
-!$omp parallel default(shared) &
-!$omp private (ij_len,ij_srt,ij_end,ij_siz,alpha,is)
+!!$omp parallel default(shared) &
+!!$omp private (ij_len,ij_srt,ij_end,ij_siz,alpha,is)
 #else
-!$omp parallel default(shared) &
-!$omp private (i,   ij_srt,ij_end,ij_siz,alpha,is)
+!!$omp parallel default(shared) &
+!!$omp private (i,   ij_srt,ij_end,ij_siz,alpha,is)
 #endif
 
                 call TLab_OMP_PARTITION(isize_field, ij_srt, ij_end, ij_siz)
@@ -263,7 +263,7 @@ contains
 #endif
                     end do
                 end if
-!$omp end parallel
+!!$omp end parallel
 
                 if (part%type /= PART_TYPE_NONE) then
                     do is = 1, inb_part
@@ -602,11 +602,11 @@ contains
         ! #######################################################################
 #ifdef USE_OPENMP
 #ifdef USE_BLAS
-!$omp parallel default(shared) &
-!$omp private (ij_len,is,ij_srt,ij_end,ij_siz)
+!!$omp parallel default(shared) &
+!!$omp private (ij_len,is,ij_srt,ij_end,ij_siz)
 #else
-!$omp parallel default(shared) &
-!$omp private (ij,  is,ij_srt,ij_end,ij_siz)
+!!$omp parallel default(shared) &
+!!$omp private (ij,  is,ij_srt,ij_end,ij_siz)
 #endif
 #endif
 
@@ -631,7 +631,7 @@ contains
 #endif
         end do
 #ifdef USE_OPENMP
-!$omp end parallel
+!!$omp end parallel
 #endif
 
         return
@@ -794,8 +794,8 @@ contains
             ! Total energy formulation
             ! -------------------------------------------------------------------
             if (imode_eqns == DNS_EQNS_TOTAL) then
-!$omp parallel default( shared ) private( i, is, rho_ratio, dt_rho_ratio )
-!$omp do
+!!$omp parallel default( shared ) private( i, is, rho_ratio, dt_rho_ratio )
+!!$omp do
                 do i = 1, isize_field
                     rho_ratio = rho(i)
                     rho(i) = rho(i) + dte*hq(i, 5)
@@ -815,15 +815,15 @@ contains
                         s(i, is) = rho_ratio*s(i, is) + dt_rho_ratio*hs(i, is)
                     end do
                 end do
-!$omp end do
-!$omp end parallel
+!!$omp end do
+!!$omp end parallel
 
                 ! -------------------------------------------------------------------
                 ! Internal energy formulation
                 ! -------------------------------------------------------------------
             else if (imode_eqns == DNS_EQNS_INTERNAL) then
-!$omp parallel default( shared ) private( i, is, rho_ratio, dt_rho_ratio )
-!$omp do
+!!$omp parallel default( shared ) private( i, is, rho_ratio, dt_rho_ratio )
+!!$omp do
                 do i = 1, isize_field
                     rho_ratio = rho(i)
                     rho(i) = rho(i) + dte*hq(i, 5)
@@ -839,22 +839,22 @@ contains
                         s(i, is) = rho_ratio*s(i, is) + dt_rho_ratio*hs(i, is)
                     end do
                 end do
-!$omp end do
-!$omp end parallel
+!!$omp end do
+!!$omp end parallel
 
             end if
 
         else
             if (scal_on) then
                 do is = 1, inb_scal
-!$omp parallel default( shared ) private( i, dt_rho_ratio )
-!$omp do
+!!$omp parallel default( shared ) private( i, dt_rho_ratio )
+!!$omp do
                     do i = 1, isize_field
                         dt_rho_ratio = dte/rho(i)
                         s(i, is) = rho_ratio*s(i, is) + dt_rho_ratio*hs(i, is)
                     end do
-!$omp end do
-!$omp end parallel
+!!$omp end do
+!!$omp end parallel
                 end do
             end if
         end if

@@ -84,9 +84,9 @@ subroutine PENTADSS(nmax, len, a, b, c, d, e, f)
     ! -----------------------------------------------------------------------
     integer(wi) n, l, omp_srt, omp_end, omp_siz
 
-    !! !$omp parallel default(none) &
-    !! !$omp shared(f,a,b,c,d,e,nmax,len) &
-    !! !$omp private(l,n,omp_srt,omp_end,omp_siz)
+    !! !!$omp parallel default(none) &
+    !! !!$omp shared(f,a,b,c,d,e,nmax,len) &
+    !! !!$omp private(l,n,omp_srt,omp_end,omp_siz)
 
     !  CALL TLab_OMP_PARTITION(len,omp_srt,omp_end,omp_siz)
     omp_srt = 1
@@ -126,7 +126,7 @@ subroutine PENTADSS(nmax, len, a, b, c, d, e, f)
             f(l, n) = (f(l, n) + f(l, n + 1)*d(n) + f(l, n + 2)*e(n))*c(n)
         end do
     end do
-    !! !$omp end parallel
+    !! !!$omp end parallel
     return
 end subroutine PENTADSS
 

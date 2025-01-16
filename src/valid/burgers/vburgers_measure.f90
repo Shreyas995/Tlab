@@ -21,7 +21,7 @@ program VBURGERS
   use TLab_Background, only: TLab_Initialize_Background
   USE FDM, only : g, FDM_Initialize
   implicit none
-
+  !$omp requires unified_shared_memory
 #ifdef USE_MPI
   real(wp) error2, dummy2
 #else

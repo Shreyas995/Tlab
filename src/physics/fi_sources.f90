@@ -71,11 +71,11 @@ contains
                 end if
 
 #ifdef USE_BLAS
-!$omp parallel default( shared ) &
-!$omp private( ilen, dummy, srt,end,siz)
+!!$omp parallel default( shared ) &
+!!$omp private( ilen, dummy, srt,end,siz)
 #else
-!$omp parallel default( shared ) &
-!$omp private( ij,   dummy, srt,end,siz )
+!!$omp parallel default( shared ) &
+!!$omp private( ij,   dummy, srt,end,siz )
 #endif
                 call TLab_OMP_PARTITION(isize_field, srt, end, siz)
 
@@ -88,7 +88,7 @@ contains
                     hq(ij, iq) = hq(ij, iq) + dummy*tmp1(ij)
                 end do
 #endif
-!$omp end parallel
+!!$omp end parallel
 
             end if
 
@@ -98,14 +98,14 @@ contains
             if (subsidenceProps%active(iq)) then
                 call LargeScaleForcing_Subsidence(subsidenceProps, imax, jmax, kmax, q(:, iq), tmp1)
 
-!$omp parallel default( shared ) &
-!$omp private( ij, srt,end,siz )
+!!$omp parallel default( shared ) &
+!!$omp private( ij, srt,end,siz )
                 call TLab_OMP_PARTITION(isize_field, srt, end, siz)
 
                 do ij = srt, end
                     hq(ij, iq) = hq(ij, iq) + tmp1(ij)
                 end do
-!$omp end parallel
+!!$omp end parallel
 
             end if
 
@@ -115,15 +115,15 @@ contains
             if (forcingProps%active(iq)) then
                 call SpecialForcing_Source(forcingProps, imax, jmax, kmax, iq, rtime, q(:,iq), hq(:, iq), tmp1)
 
-!$omp parallel default( shared ) &
-!$omp private( ij, srt,end,siz )
+!!$omp parallel default( shared ) &
+!!$omp private( ij, srt,end,siz )
                 call TLab_OMP_PARTITION(isize_field, srt, end, siz)
 
                 do ij = srt, end
                     ! hq(ij, iq) = hq(ij, iq) + tmp1(ij)*forcingProps%vector(iq)
                     hq(ij, iq) = hq(ij, iq) + tmp1(ij)
                 end do
-!$omp end parallel
+!!$omp end parallel
 
             end if
         end do
@@ -156,14 +156,14 @@ contains
                 if (imode_eqns == DNS_EQNS_ANELASTIC) then
                     call THERMO_ANELASTIC_WEIGHT_ADD(imax, jmax, kmax, ribackground, tmp1, hs(:, is))
                 else
-!$omp parallel default( shared ) &
-!$omp private( ij, srt,end,siz )
+!!$omp parallel default( shared ) &
+!!$omp private( ij, srt,end,siz )
                     call TLab_OMP_PARTITION(isize_field, srt, end, siz)
 
                     do ij = srt, end
                         hs(ij, is) = hs(ij, is) + tmp1(ij)
                     end do
-!$omp end parallel
+!!$omp end parallel
                 end if
 
             end if
@@ -177,14 +177,14 @@ contains
                 if (imode_eqns == DNS_EQNS_ANELASTIC) then
                     call THERMO_ANELASTIC_WEIGHT_ADD(imax, jmax, kmax, ribackground, tmp1, hs(:, is))
                 else
-!$omp parallel default( shared ) &forcingProps%vector
-!$omp private( ij, srt,end,siz )
+!!$omp parallel default( shared ) &
+!!$omp private( ij, srt,end,siz )
                     call TLab_OMP_PARTITION(isize_field, srt, end, siz)
 
                     do ij = srt, end
                         hs(ij, is) = hs(ij, is) + tmp1(ij)
                     end do
-!$omp end parallel
+!!$omp end parallel
                 end if
 
             end if
@@ -195,14 +195,14 @@ contains
             if (chemistryProps%active(is)) then
                 call Chemistry_Source(chemistryProps, imax, jmax, kmax, is, s, tmp1)
 
-!$omp parallel default( shared ) &
-!$omp private( ij, srt,end,siz )
+!!$omp parallel default( shared ) &
+!!$omp private( ij, srt,end,siz )
                 call TLab_OMP_PARTITION(isize_field, srt, end, siz)
 
                 do ij = srt, end
                     hs(ij, is) = hs(ij, is) + tmp1(ij)
                 end do
-!$omp end parallel
+!!$omp end parallel
 
             end if
 
@@ -212,14 +212,14 @@ contains
             if (subsidenceProps%active(is)) then
                 call LargeScaleForcing_Subsidence(subsidenceProps, imax, jmax, kmax, s(:, is), tmp1)
 
-!$omp parallel default( shared ) &
-!$omp private( ij, srt,end,siz )
+!!$omp parallel default( shared ) &
+!!$omp private( ij, srt,end,siz )
                 call TLab_OMP_PARTITION(isize_field, srt, end, siz)
 
                 do ij = srt, end
                     hs(ij, is) = hs(ij, is) + tmp1(ij)
                 end do
-!$omp end parallel
+!!$omp end parallel
 
             end if
 
@@ -256,8 +256,8 @@ contains
             geo_u = cos(coriolis%parameters(1))*coriolis%parameters(2)
             geo_w = -sin(coriolis%parameters(1))*coriolis%parameters(2)
 
-!$omp parallel default( shared ) &
-!$omp private( ij, dummy,srt,end,siz )
+!!$omp parallel default( shared ) &
+!!$omp private( ij, dummy,srt,end,siz )
             call TLab_OMP_PARTITION(field_sz, srt, end, siz)
 
             dummy = coriolis%vector(2)
@@ -266,7 +266,7 @@ contains
                 r(ii, 1) = r(ii, 1) + dummy*(geo_w - u(ii, 3))
                 r(ii, 3) = r(ii, 3) + dummy*(u(ii, 1) - geo_u)
             end do
-!$omp end parallel
+!!$omp end parallel
         end select
 
     end subroutine FI_CORIOLIS
