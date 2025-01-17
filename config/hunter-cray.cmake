@@ -44,7 +44,10 @@ endif()
 
 # set(DRAGONEGG_FLAGS "-finline-aggressive -fslp-vectorize  -fmerge-all-constants") #  -mmadd4 -mfp64 -enable-strided-vectorization")
 set(USER_Fortran_FLAGS         "-eZ ${USER_omp_FLAGS} ${USER_APU_FLAGS}") #-fallow-argument-mismatch from gnu-version10
-set(USER_Fortran_FLAGS_RELEASE "-eo -hipa2 -hfp2 -hunroll2 -hfusion2 -hscalar1 " ) #these will be ignored:  -fprefetch-loop-arrays --param prefetch-latency=300") 
+set(USER_Fortran_FLAGS_RELEASE "-hipa2 -hfp2 -hunroll2 -hfusion2 -hscalar1 -m4" ) #these will be ignored:  -fprefetch-loop-arrays --param prefetch-latency=300") 
+# Flag -eo is disabled to reduce compiler output: 
+# manual -eo/-do Display to stderr the optimization options the compiler used for this compilation. This is the same as specifying -h display_opt. Default: disabled
+
 set(USER_Fortran_FLAGS_DEBUG   "-O0 -g -debug -ffpe-trap=all") 
 
 if ( NOT CMAKE_BUILD_TYPE ) 
