@@ -123,7 +123,7 @@ program VBURGERS
      call OPR_BURGERS_X(OPR_B_SELF, 0, imax, jmax, kmax, bcs, g(1), a, a, c, tmp1)
      call OPR_PARTIAL_Y(OPR_P2_P1, imax, jmax, kmax, bcs, g(2), a, b, c)
      CALL SYSTEM_CLOCK(clock_add0) 
-     !$omp target teams distribute parallel do collapse(2) default (none) &
+     !$omp target teams distribute parallel do collapse(3) default (none) &
      !$omp private(i,j,k) &
      !$omp shared(a,b,c,imax,jmax,kmax,visc) 
      do k = 1, kmax
@@ -141,7 +141,7 @@ program VBURGERS
      ! ###################################################################
      if (g(3)%size > 1) then
         CALL SYSTEM_CLOCK(clock_add0)
-        !$omp target teams distribute parallel do collapse(2) default(none) &
+        !$omp target teams distribute parallel do collapse(3) default(none) &
         !$omp private(i,j,k) &
         !$omp shared(a,b,c,imax,jmax,kmax,visc) 
         do k = 1, kmax
@@ -165,6 +165,6 @@ program VBURGERS
   PRINT 101, 'Transpos',trans_time/nrun, 100*trans_time/SUM(runtime)
   PRINT 101, 'Addition',add_time/nrun, 100*add_time/SUM(runtime) 
 100 FORMAT('T MEAN|MIN|MAX [s] : ', F8.4, 1x, F8.4, 1x , F8.4)
-101 FORMAT('Time per run in ',A9,'[s]:', F8.4,'s (', F3.0,'%)') 
+101 FORMAT('Time per run in ',A9,'[s]:', F8.4,'s (', F4.1,'%)') 
   call TLab_STOP(0)
 end program VBURGERS
