@@ -148,7 +148,6 @@ program VBURGERS
            do j = 1, jmax
               do i = 1, imax
                  b(i, j, k) = b(i, j, k)*visc - a(i, j, k)*c(i, j, k)
-                 ! b(i, j, k) = b(i, j, k)*visc*ribackground(j) - a(i, j, k)*c(i, j, k)
               end do
            end do
         end do
@@ -164,7 +163,7 @@ program VBURGERS
   PRINT 100,SUM(runtime)/nrun, MINVAL(runtime),MAXVAL(runtime)
   PRINT 101, 'Transpos',trans_time/nrun, 100*trans_time/SUM(runtime)
   PRINT 101, 'Addition',add_time/nrun, 100*add_time/SUM(runtime) 
-100 FORMAT('T MEAN|MIN|MAX [s] : ', F8.4, 1x, F8.4, 1x , F8.4)
-101 FORMAT('Time per run in ',A9,'[s]:', F8.4,'s (', F4.1,'%)') 
+100 FORMAT('T MEAN|MIN|MAX [s] : ', F9.5, 1x, F9.5, 1x , F9.5)
+101 FORMAT('Time per run in ',A9,'[s]:', F9.5,'s (', F5.2,'%)') 
   call TLab_STOP(0)
 end program VBURGERS

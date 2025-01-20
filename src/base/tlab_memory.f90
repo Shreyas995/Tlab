@@ -628,7 +628,7 @@ contains
         character(len=*) :: C_FILE_LOC, log_file, s
 
         if (ierr /= 0) then
-            call TLab_Write_ASCII(log_file, C_FILE_LOC//'. Error while allocating memory space for'//trim(adjustl(s))//'.')
+            call TLab_Write_ASCII(log_file, C_FILE_LOC//'. Error while allocating memory space for '//trim(adjustl(s))//'.')
             call TLab_Stop(DNS_ERROR_ALLOC)
         end if
 
