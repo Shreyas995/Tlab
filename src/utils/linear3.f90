@@ -386,6 +386,7 @@ end subroutine TRIDPFS
 subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
     use TLab_Constants, only: wp, wi
     use TLab_OpenMP
+    use TLAB_VARS, only: tridpss_time
 
 #ifdef USE_OPENMP
     use OMP_LIB
@@ -402,10 +403,20 @@ subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
     real(wp) :: dummy1, dummy2
     integer(wi) :: srt, end, siz
 
+    integer clock_0, clock_1, clock_cycle
+
     integer(wi) l, n
 #ifdef USE_BLAS
     integer :: ilen
 #endif
+
+! ###################################################################
+! -----------------------------------------------------------------------
+! Profiling
+! -----------------------------------------------------------------------
+call SYSTEM_CLOCK(clock_0,clock_cycle) 
+
+#ifndef USE_APU
 
 ! -------------------------------------------------------------------
 ! Forward sweep
@@ -502,6 +513,95 @@ subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
     end do
 999 continue
 !!$omp end parallel
+
+! -----------------------------------------------------------------------
+! With APU ACCELERATION 
+! -----------------------------------------------------------------------
+
+#else
+
+! -------------------------------------------------------------------
+! Forward sweep
+! -------------------------------------------------------------------
+    dummy1 = b(1)
+    
+    !$omp target teams distribute parallel do default(none) &
+    !$omp private(l) &
+    !$omp shared(f,dummy1,len)
+    do l = 1, len
+        f(l, 1) = f(l, 1)*dummy1
+    end do
+    !$omp end target teams distribute parallel do
+
+    do n = 2, nmax - 1
+        dummy1 = a(n)
+        dummy2 = b(n)
+
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(f,n,dummy1,dummy2,len)
+        do l = 1, len
+            f(l, n) = f(l, n)*dummy2 + dummy1*f(l, n - 1)
+        end do
+        !$omp end target teams distribute parallel do
+    end do
+
+    wrk(1:len) = 0.0_wp
+
+    do n = 1, nmax - 1
+        dummy1 = d(n)
+
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(wrk,n,dummy1,f,len)
+        do l = 1, len
+            wrk(l) = wrk(l) + dummy1*f(l, n)
+        end do
+        !$omp end target teams distribute parallel do
+    end do
+
+    dummy1 = b(nmax)
+    !$omp target teams distribute parallel do default(none) &
+    !$omp private(l) &
+    !$omp shared(f,nmax,wrk,dummy1,f,len)
+    do l = 1, len
+        f(l, nmax) = (f(l, nmax) - wrk(l))*dummy1
+    end do
+    !$omp end target teams distribute parallel do
+
+! -------------------------------------------------------------------
+! Backward sweep
+! -------------------------------------------------------------------
+    dummy1 = e(nmax - 1)
+
+    !$omp target teams distribute parallel do default(none) &
+    !$omp private(l) &
+    !$omp shared(f,nmax,wrk,dummy1,f,len)
+    do l = 1, len
+        f(l, nmax - 1) = dummy1*f(l, nmax) + f(l, nmax - 1)
+    end do
+    !$omp end target teams distribute parallel do
+
+    do n = nmax - 2, 1, -1
+        dummy1 = c(n)
+        dummy2 = e(n)
+
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(f,nmax,dummy1,dummy2,f,len)
+        do l = 1, len
+            f(l, n) = f(l, n) + dummy1*f(l, n + 1) + dummy2*f(l, nmax)
+        end do
+        !$omp end target teams distribute parallel do
+    end do
+
+#endif
+
+! -----------------------------------------------------------------------
+! Profiling
+! -----------------------------------------------------------------------
+    call SYSTEM_CLOCK(clock_1)
+    tridpss_time = tridpss_time + real(clock_1 - clock_0)/ clock_cycle 
 
     return
 end subroutine TRIDPSS

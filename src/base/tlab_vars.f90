@@ -61,6 +61,6 @@ module TLAB_VARS
 ! ###################################################################
 ! Timings
 ! ###################################################################    
-    real(wp) :: trans_time, tridss_time
+    real(wp) :: trans_time, tridss_time, tridpss_time
 
 end module TLAB_VARS
