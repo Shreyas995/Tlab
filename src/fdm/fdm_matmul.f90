@@ -594,13 +594,13 @@ contains
                 !!$omp end target teams distribute parallel do
                     
                 if (present(bcs_b)) then
-                    !!$omp target teams distribute parallel do default(none) &
-                    !!$omp private(l) &
-                    !!$omp shared(len,bcs_t,f,nx,u,nx,r1_t,r2_t,r3_t,r5_t)
+                    !$omp target teams distribute parallel do default(none) &
+                    !$omp private(l) &
+                    !$omp shared(len,bcs_t,f,nx,u,nx,r1_t,r2_t,r3_t,r5_t)
                     do l = 1, len
                         bcs_t(l) = u(l, nx - 3)*r5_t(3) + u(l, nx - 2)*r1_t(3) + u(l, nx - 1)*r2_t(3) + f(l, nx)*r3_t(3) ! r5(nx) with extended stencil
                     end do
-                    !!$omp end target teams distribute parallel do
+                    !$omp end target teams distribute parallel do
                 end if
 
             else
