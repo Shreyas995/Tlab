@@ -561,13 +561,13 @@ contains
 
         ! Interior points
         do n = 4, nx - 3
-            !!$omp target teams distribute parallel do default(none) &
-            !!$omp private(l) &
-            !!$omp shared(len,f,u,n,r5_loc)
+            !$omp target teams distribute parallel do default(none) &
+            !$omp private(l) &
+            !$omp shared(len,f,u,n,r5_loc)
             do l = 1, len
                 f(l, n) = u(l, n + 1) - u(l, n - 1) + r5_loc*(u(l, n + 2) - u(l, n - 2))
             end do
-            !!$omp end target teams distribute parallel do
+            !$omp end target teams distribute parallel do
         end do
 
         ! Boundary
