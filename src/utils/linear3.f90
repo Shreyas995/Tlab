@@ -588,7 +588,7 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
 
         !$omp target teams distribute parallel do default(none) &
         !$omp private(l) &
-        !$omp shared(f,nmax,dummy1,dummy2,f,len)
+        !$omp shared(f,nmax,dummy1,dummy2,f,len,n)
         do l = 1, len
             f(l, n) = f(l, n) + dummy1*f(l, n + 1) + dummy2*f(l, nmax)
         end do
