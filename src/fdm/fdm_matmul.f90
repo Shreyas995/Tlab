@@ -592,16 +592,17 @@ contains
                     f(l, nx - 1) = u(l, nx - 3)*r1_t(2) + u(l, nx - 2)*r2_t(2) + u(l, nx - 1)*r3_t(2) + f(l, nx)*r4_t(2)
                 end do
                 !!$omp end target teams distribute parallel do
-                    
-                ! if (present(bcs_b)) then
-                !$omp target teams distribute parallel do default(none) &
-                !$omp private(l) &
-                !$omp shared(len,bcs_t,f,u,nx,r1_t,r2_t,r3_t,r5_t)
-                do l = 1, len
-                    bcs_t(l) = u(l, nx - 3)*r5_t(3) + u(l, nx - 2)*r1_t(3) + u(l, nx - 1)*r2_t(3) + f(l, nx)*r3_t(3) ! r5(nx) with extended stencil
-                end do
-                !$omp end target teams distribute parallel do
-                ! end if
+                
+                if (present(bcs_b)) then
+                    !$omp target teams distribute parallel do default(none) &
+                    !$omp private(l) &
+                    !$omp shared(len,bcs_t,f,u,nx,rhs_t)
+                    do l = 1, len
+                        bcs_t(l) = u(l, nx - 3)*rhs_t(3,5) + u(l, nx - 2)*rhs_t(3,1) + u(l, nx - 1)*rhs_t(3,2) + f(l, nx)*rhs_t(3,3) ! r5(nx) with extended stencil
+                        ! bcs_t(l) = u(l, nx - 3)*r5_t(3) + u(l, nx - 2)*r1_t(3) + u(l, nx - 1)*r2_t(3) + f(l, nx)*r3_t(3) ! r5(nx) with extended stencil
+                    end do
+                    !$omp end target teams distribute parallel do
+                end if
 
             else
                 !$omp target teams distribute parallel do default(none) &
