@@ -51,7 +51,7 @@ subroutine TRIDFS(nmax, a, b, c)
 end subroutine TRIDFS
 
 ! #######################################################################
-! Backward substitution step in the Thomas algorith
+! Backward substitution step in the Thomas algorithm
 ! #######################################################################
 subroutine TRIDSS(nmax, len, a, b, c, f)
     use TLab_Constants, only: wp, wi

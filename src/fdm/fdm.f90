@@ -188,7 +188,7 @@ contains
 
         case (FDM_COM6_JACOBIAN_PENTA)
             call FDM_C1N6_Jacobian_Penta(nx, g%jac, wrk1d(:, 1), wrk1d(:, 6), g%nb_diag_1, coef)
-   call MatMul_7d_antisym(nx, 1, wrk1d(:, 6), wrk1d(:, 7), wrk1d(:, 8), wrk1d(:, 9), wrk1d(:, 10), wrk1d(:, 11), wrk1d(:, 12), x, g%jac(:, 1), periodic=.false.)
+            call MatMul_7d_antisym(nx, 1, wrk1d(:, 6), wrk1d(:, 7), wrk1d(:, 8), wrk1d(:, 9), wrk1d(:, 10), wrk1d(:, 11), wrk1d(:, 12), x, g%jac(:, 1), periodic=.false.)
 
         end select
 
