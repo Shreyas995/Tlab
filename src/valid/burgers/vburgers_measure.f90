@@ -25,16 +25,13 @@
   
    !$omp requires unified_shared_memory
   
-#ifdef USE_MPI
-   real(wp) error2, dummy2
-#else
+#ifndef USE_MPI
    integer(wi), parameter :: ims_pro = 0
 #endif
 
    real(wp), dimension(:, :, :), pointer :: a, b, c
 
    integer(wi) i, j, k, ig, bcs(2, 2)
-   real(wp) dummy, error
 
    integer irun,nrun,stat
    integer clock_0, clock_1,clock_cycle
@@ -199,11 +196,16 @@
       
          real(wp), intent(in) :: fld(imax,jmax,kmax)
          character(len=*), intent(in) :: name
-      
-      
-
+         
+         real(wp) dummy
+#ifdef USE_MPI
+         real(wp) dummy2
+#endif
+         dummy = 0.0_wp
+         
          dummy = sum(b)
 #ifdef USE_MPI
+         dummy2 = 0_wp
          dummy2 = dummy
          call MPI_ALLREDUCE(dummy2, dummy, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ims_err)
 #endif
