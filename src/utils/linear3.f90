@@ -56,6 +56,7 @@ end subroutine TRIDFS
 subroutine TRIDSS(nmax, len, a, b, c, f)
     use TLab_Constants, only: wp, wi
     use TLab_OpenMP
+    use TLAB_VARS, only: tridss_time
 
 #ifdef USE_OPENMP
     use OMP_LIB
@@ -73,6 +74,8 @@ subroutine TRIDSS(nmax, len, a, b, c, f)
     integer(wi) :: srt, end, siz
     real(wp) :: dummy1, dummy2
 
+    integer clock_0, clock_1, clock_cycle
+
 #ifdef USE_BLAS
     real(wp) alpha
     integer ilen
@@ -82,8 +85,16 @@ subroutine TRIDSS(nmax, len, a, b, c, f)
 
 ! ###################################################################
 ! -----------------------------------------------------------------------
+! Profiling
+! -----------------------------------------------------------------------
+    call SYSTEM_CLOCK(clock_0,clock_cycle) 
+
+#ifndef USE_APU
+
+! -----------------------------------------------------------------------
 ! Forward sweep
 ! -----------------------------------------------------------------------
+
 #ifdef USE_BLAS
     ilen = len
 #endif
@@ -145,6 +156,60 @@ subroutine TRIDSS(nmax, len, a, b, c, f)
     end do
 999 continue
 !!$omp end parallel
+
+! -----------------------------------------------------------------------
+! With APU ACCELERATION 
+! -----------------------------------------------------------------------
+
+#else
+
+    ! Forward sweep
+    do n = 2, nmax
+        dummy1 = a(n)
+
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(f,dummy1,n,len)
+        do l = 1, len
+            f(l, n) = f(l, n) + dummy1*f(l, n - 1)
+        end do
+        !$omp end target teams distribute parallel do
+
+    end do
+
+    ! Backward sweep
+    dummy1 = b(nmax)
+
+    !$omp target teams distribute parallel do default(none) &
+    !$omp private(l) &
+    !$omp shared(f,dummy1,nmax,len)
+    do l = 1, len
+        f(l, nmax) = f(l, nmax)*dummy1
+    end do
+    !$omp end target teams distribute parallel do
+
+    do n = nmax - 1, 1, -1
+        dummy1 = c(n)
+        dummy2 = b(n)
+
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(f,dummy1, dummy2,n,len)
+        do l = 1, len
+            f(l, n) = (f(l, n) + dummy1*f(l, n + 1))*dummy2
+        end do
+        !$omp end target teams distribute parallel do
+
+
+    end do
+    
+#endif
+
+! -----------------------------------------------------------------------
+! Profiling
+! -----------------------------------------------------------------------
+    call SYSTEM_CLOCK(clock_1)
+    tridss_time = tridss_time + real(clock_1 - clock_0)/ clock_cycle 
 
     return
 end subroutine TRIDSS
