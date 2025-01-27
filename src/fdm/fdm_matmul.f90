@@ -535,7 +535,7 @@ contains
                 if (present(bcs_b)) then
                     !$omp target teams distribute parallel do default(none) &
                     !$omp private(l) &
-                    !$omp shared(len,bcs_b,f,u,nx,r1_b,r2_b,r3_b,r4_b,r5_b)
+                    !$omp shared(len,bcs_b,f,u,r1_b,r2_b,r3_b,r4_b,r5_b)
                     do l = 1, len
                         bcs_b(l) = f(l, 1)*r3_b(1) + u(l, 2)*r4_b(1) + u(l, 3)*r5_b(1) + u(l, 4)*r1_b(1) ! r1(1) with extended stencil
                         f(l, 2)  = f(l, 1)*r2_b(2) + u(l, 2)*r3_b(2) + u(l, 3)*r4_b(2) + u(l, 4)*r5_b(2)
@@ -586,7 +586,7 @@ contains
                 ! f(n) contains boundary condition
                 !$omp target teams distribute parallel do default(none) &
                 !$omp private(l) &
-                !$omp shared(len,f,nx,u,nx,r1_t,r2_t,r3_t,r4_t,r5_t)
+                !$omp shared(len,f,nx,u,r1_t,r2_t,r3_t,r4_t,r5_t)
                 do l = 1, len
                     f(l, nx - 2) = u(l, nx - 4)*r1_t(1) + u(l, nx - 3)*r2_t(1) + u(l, nx - 2)*r3_t(1) + u(l, nx - 1)*r4_t(1) + f(l, nx)*r5_t(1)
                     f(l, nx - 1) = u(l, nx - 3)*r1_t(2) + u(l, nx - 2)*r2_t(2) + u(l, nx - 1)*r3_t(2) + f(l, nx)*r4_t(2)
