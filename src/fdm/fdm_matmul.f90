@@ -604,15 +604,15 @@ contains
                 end if
 
             else
-                !!$omp target teams distribute parallel do default(none) &
-                !!$omp private(l) &
-                !!$omp shared(len,f,u,nx,r1,r2,r3,r4,r5)
+                !$omp target teams distribute parallel do default(none) &
+                !$omp private(l) &
+                !$omp shared(len,f,u,nx,r1,r2,r3,r4,r5)
                 do l = 1, len
                     f(l, nx - 2) = u(l, nx - 4)*r1(nx - 2) + u(l, nx - 3)*r2(nx - 2) + u(l, nx - 2)*r3(nx - 2) + u(l, nx - 1)*r4(nx - 2) + u(l, nx)*r5(nx - 2)
                     f(l, nx - 1) = u(l, nx - 3)*r1(nx - 1) + u(l, nx - 2)*r2(nx - 1) + u(l, nx - 1)*r3(nx - 1) + u(l, nx)*r4(nx - 1)
                     f(l, nx) = u(l, nx - 3)*r5(nx) + u(l, nx - 2)*r1(nx) + u(l, nx - 1)*r2(nx) + u(l, nx)*r3(nx)! r5(nx) with extended stencil
                 end do
-                !!$omp end target teams distribute parallel do
+                !$omp end target teams distribute parallel do
             end if
 
         end if
