@@ -42,6 +42,7 @@
 
    trans_time = 0.0_wp
    tridss_time = 0.0_wp
+   mat5d_time = 0.0_wp
    tridpss_time = 0.0_wp
    add_time = 0.0_wp
 
@@ -103,21 +104,34 @@
    ! (avoids measuring the first-touch penalty) 
    call OPR_PARTIAL_X(OPR_P2_P1, imax, jmax, kmax, bcs, g(1), a, b, c)
    call output_sum(b, 'OPR_PAR_X')
+   call output_sum(c, 'OPR_PAR_X')
+   if (ims_pro == 0) write (*, *) '------------------- '
 
    call OPR_BURGERS_X(OPR_B_SELF, 0, imax, jmax, kmax, bcs, g(1), a, a, c, tmp1)
    call output_sum(c, 'OPR_BUR_X')
+   call output_sum(tmp1, 'OPR_BUR_X')
+   if (ims_pro == 0) write (*, *) '------------------- '
    
    call OPR_PARTIAL_Y(OPR_P2_P1, imax, jmax, kmax, bcs, g(2), a, b, c)
    call output_sum(b, 'OPR_PAR_Y')
+   call output_sum(c, 'OPR_PAR_Y')
+   if (ims_pro == 0) write (*, *) '------------------- '
    
    call OPR_BURGERS_Y(OPR_B_SELF, 0, imax, jmax, kmax, bcs, g(2), a, a, c, tmp1)
    call output_sum(c, 'OPR_BUR_Y')
+   call output_sum(tmp1, 'OPR_BUR_Y')
+   if (ims_pro == 0) write (*, *) '------------------- '
    
    call OPR_PARTIAL_Z(OPR_P2_P1, imax, jmax, kmax, bcs, g(3), a, b, c)
    call output_sum(b, 'OPR_PAR_Z')
+   call output_sum(c, 'OPR_PAR_Z')
+   if (ims_pro == 0) write (*, *) '------------------- '
    
    call OPR_BURGERS_Z(OPR_B_SELF, 0, imax, jmax, kmax, bcs, g(3), a, a, c, tmp1)
    call output_sum(c, 'OPR_BUR_Z')
+   call output_sum(tmp1, 'OPR_BUR_Z')
+   if (ims_pro == 0) write (*, *) '------------------- '
+
 
    if (ims_pro == 0) then
       write (*, *) '----------------------------------------------------- '
@@ -129,6 +143,7 @@
    trans_time = 0.0_wp
    tridss_time = 0.0_wp
    tridpss_time = 0.0_wp
+   mat5d_time = 0.0_wp
 
    DO irun=1,nrun
 
@@ -189,6 +204,7 @@
    PRINT 101, 'Addition',add_time/nrun, 100*add_time/SUM(runtime) 
    PRINT 101, 'TRIDSS  ',tridss_time/nrun, 100*tridss_time/SUM(runtime)
    PRINT 101, 'TRIDPSS ',tridpss_time/nrun, 100*tridpss_time/SUM(runtime)
+   PRINT 101, 'MATMUL5D',mat5d_time/nrun, 100*mat5d_time/SUM(runtime)
 100 FORMAT('T MEAN|MIN|MAX [s] : ', F9.5, 1x, F9.5, 1x , F9.5)
 101 FORMAT('Time per run in ',A9,'[s]:', F9.5,'s (', F5.2,'%)') 
    call TLab_STOP(0)
