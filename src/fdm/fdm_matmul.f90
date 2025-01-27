@@ -533,27 +533,27 @@ contains
             if (any([BCS_ND, BCS_NN, BCS_MIN, BCS_BOTH] == ibc_loc)) then
                 ! f(1) contains boundary condition
                 if (present(bcs_b)) then
-                    !$omp target teams distribute parallel do default(none) &
-                    !$omp private(l) &
-                    !$omp shared(len,bcs_b,f,u,r1_b,r2_b,r3_b,r4_b,r5_b)
+                    !!$omp target teams distribute parallel do default(none) &
+                    !!$omp private(l) &
+                    !!$omp shared(len,bcs_b,f,u,r1_b,r2_b,r3_b,r4_b,r5_b)
                     do l = 1, len
                         bcs_b(l) = f(l, 1)*r3_b(1) + u(l, 2)*r4_b(1) + u(l, 3)*r5_b(1) + u(l, 4)*r1_b(1) ! r1(1) with extended stencil
                         f(l, 2)  = f(l, 1)*r2_b(2) + u(l, 2)*r3_b(2) + u(l, 3)*r4_b(2) + u(l, 4)*r5_b(2)
                         f(l, 3)  = f(l, 1)*r1_b(3) + u(l, 2)*r2_b(3) + u(l, 3)*r3_b(3) + u(l, 4)*r4_b(3) + u(l, 5)*r5_b(3)
                     end do
-                    !$omp end target teams distribute parallel do
+                    !!$omp end target teams distribute parallel do
                 end if
 
             else
-                !!$omp target teams distribute parallel do default(none) &
-                !!$omp private(l) &
-                !!$omp shared(len,f,u,r1,r2,r3,r4,r5)
+                !$omp target teams distribute parallel do default(none) &
+                !$omp private(l) &
+                !$omp shared(len,f,u,r1,r2,r3,r4,r5)
                 do l = 1, len
                     f(l, 1) = u(l, 1)*r3(1) + u(l, 2)*r4(1) + u(l, 3)*r5(1) + u(l, 4)*r1(1)   ! r1(1) with extended stencil
                     f(l, 2) = u(l, 1)*r2(2) + u(l, 2)*r3(2) + u(l, 3)*r4(2) + u(l, 4)*r5(2)
                     f(l, 3) = u(l, 1)*r1(3) + u(l, 2)*r2(3) + u(l, 3)*r3(3) + u(l, 4)*r4(3) + u(l, 5)*r5(3)
                 end do
-                !!$omp end target teams distribute parallel do
+                !$omp end target teams distribute parallel do
 
             end if
 
