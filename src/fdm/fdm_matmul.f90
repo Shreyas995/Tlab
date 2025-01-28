@@ -172,6 +172,7 @@ contains
 
         ! -------------------------------------------------------------------
         ! Interior points; accelerate
+        write(*,*) 'len, nx', len, nx
         do n = 4, nx - 3
             !$omp target teams distribute parallel do default(none) &
             !$omp private(l) &
