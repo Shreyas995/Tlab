@@ -141,23 +141,23 @@ contains
         ! Boundary; the first 3/2+1+1=3 rows might be different
         if (any([BCS_MIN, BCS_BOTH] == ibc_loc)) then
             if (present(bcs_b)) then
-                !$omp target teams distribute parallel do default(none) &
-                !$omp private(l) &
-                !$omp shared(len,bcs_b,f,rhs_b,u)
+                !!$omp target teams distribute parallel do default(none) &
+                !!$omp private(l) &
+                !!$omp shared(len,bcs_b,f,rhs_b,u)
                 do l = 1, len
                     bcs_b(l) = f(l, 1)*rhs_b(1,2) + u(l, 2)*rhs_b(1,3) + u(l, 3)*rhs_b(1,1) ! r1(1) contains extended stencil
                 end do
-                !$omp end target teams distribute parallel do
+                !!$omp end target teams distribute parallel do
             end if
             ! f(1) contains the boundary condition
-            !$omp target teams distribute parallel do default(none) &
-            !$omp private(l) &
-            !$omp shared(len,f,rhs_b,u)
+            !!$omp target teams distribute parallel do default(none) &
+            !!$omp private(l) &
+            !!$omp shared(len,f,rhs_b,u)
             do l = 1, len
                 f(l, 2) = f(l, 1)*rhs_b(2,1) + u(l, 2)*rhs_b(2,2) + u(l, 3)*rhs_b(2,3)
                 f(l, 3) = f(l, 1)*rhs_b(3,0) + u(l, 2)*rhs_b(3,1) + u(l, 3)*rhs_b(3,2) + u(l, 4)*rhs_b(3,3)
             end do
-            !$omp end target teams distribute parallel do
+            !!$omp end target teams distribute parallel do
         else
             !!$omp target teams distribute parallel do default(none) &
             !!$omp private(l) &  
@@ -173,13 +173,13 @@ contains
         ! -------------------------------------------------------------------
         ! Interior points; accelerate
         do n = 4, nx - 3
-        !     !!$omp target teams distribute parallel do default(none) &
-        !     !!$omp private(l) &
-        !     !!$omp shared(n,len,f,u,r1,r3)
+            !$omp target teams distribute parallel do default(none) &
+            !$omp private(l) &
+            !$omp shared(n,len,f,u,r1,r3)
             do l = 1, len
                 f(l, n) = u(l, n - 1)*r1(n) + u(l, n) + u(l, n + 1)*r3(n)
             end do
-          !  !!$omp end target teams distribute parallel do
+           !$omp end target teams distribute parallel do
         end do
 
 
