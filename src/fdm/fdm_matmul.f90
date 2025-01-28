@@ -212,7 +212,6 @@ contains
 
     ! #######################################################################
     subroutine MatMul_3d_antisym(nx, len, r1, r2, r3, u, f, periodic, ibc, rhs_b, rhs_t, bcs_b, bcs_t)
-        use 
         integer(wi), intent(in) :: nx, len                      ! m linear systems or size n
         real(wp), intent(in) :: r1(nx), r2(nx), r3(nx)          ! RHS diagonals
         real(wp), intent(in) :: u(len, nx)                      ! function u

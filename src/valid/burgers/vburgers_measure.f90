@@ -146,6 +146,7 @@
    tridpss_time = 0.0_wp
    mat5dantisym_time = 0.0_wp
    mat5dsym_time = 0.0_wp
+   mat3dadd_time = 0.0_wp
 
    DO irun=1,nrun
 
@@ -207,7 +208,8 @@
    PRINT 101, 'TRIDSS       ',tridss_time/nrun, 100*tridss_time/SUM(runtime)
    PRINT 101, 'TRIDPSS      ',tridpss_time/nrun, 100*tridpss_time/SUM(runtime)
    PRINT 101, 'MATMUL5D_ANTI',mat5dantisym_time/nrun, 100*mat5dantisym_time/SUM(runtime)
-   PRINT 101, 'MATMUL5D_ANTI',mat5dsym_time/nrun, 100*mat5dsym_time/SUM(runtime)
+   PRINT 101, 'MATMUL5D_SYM ',mat5dsym_time/nrun, 100*mat5dsym_time/SUM(runtime)
+   PRINT 101, 'MATMUL3D_ADD ',mat3dadd_time/nrun, 100*mat3dadd_time/SUM(runtime)
 100 FORMAT('T MEAN|MIN|MAX [s] : ', F9.5, 1x, F9.5, 1x , F9.5)
 101 FORMAT('Time per run in ',A14,'[s]:', F9.5,'s (', F5.2,'%)') 
    call TLab_STOP(0)
