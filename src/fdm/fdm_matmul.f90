@@ -178,15 +178,15 @@ contains
         !$omp end target teams distribute parallel do
         ! -------------------------------------------------------------------
         ! Interior points; accelerate
+        !$omp target teams distribute parallel do collapse(2) default(none) &
+        !$omp private(n,l) &
+        !$omp shared(len,f,u,nx,r1,r2,r3)
         do n = 2, nx - 1
-            !$omp target teams distribute parallel do default(none) &
-            !$omp private(l) &
-            !$omp shared(len,f,u,n,r1,r2,r3)
             do l = 1, len
                 f(l, n) = f(l, n) + u(l, n - 1)*r1(n) + u(l, n)*r2(n) + u(l, n + 1)*r3(n)
             end do
-            !$omp end target teams distribute parallel do
         end do
+        !$omp end target teams distribute parallel do
 
         ! -------------------------------------------------------------------
         ! Boundary
@@ -830,16 +830,16 @@ contains
         end if
 
         ! Interior points
+        !$omp target teams distribute parallel do collapse(2) default(none) &
+        !$omp private(n,l) &
+        !$omp shared(len,f,u,nx,r3_loc,r5_loc)
         do n = 3, nx - 2
-            !$omp target teams distribute parallel do default(none) &
-            !$omp private(l) &
-            !$omp shared(len,f,u,n,r3_loc,r5_loc)
             do l = 1, len
                 f(l, n) = r3_loc*u(l, n) + u(l, n + 1) + u(l, n - 1) &
                         + r5_loc*(u(l, n + 2) + u(l, n - 2))
             end do
-            !$omp end target teams distribute parallel do
         end do
+        !$omp end target teams distribute parallel do
 
         ! Boundary
         if (periodic) then
