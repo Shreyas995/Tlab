@@ -172,15 +172,26 @@ contains
 
         ! -------------------------------------------------------------------
         ! Interior points; accelerate
-        !$omp target teams distribute parallel do collapse(2) default(none) &
-        !$omp private(n,l) &
-        !$omp shared(nx,len,f,u,r1,r3)
         do n = 4, nx - 3
+            !$omp target teams distribute parallel do collapse(2) default(none) &
+            !$omp private(l) &
+            !$omp shared(n,len,f,u,r1,r3)
             do l = 1, len
                 f(l, n) = u(l, n - 1)*r1(n) + u(l, n) + u(l, n + 1)*r3(n)
             end do
+            !$omp end target teams distribute parallel do
         end do
-        !$omp end target teams distribute parallel do
+
+
+        ! !$omp target teams distribute parallel do collapse(2) default(none) &
+        ! !$omp private(n,l) &
+        ! !$omp shared(nx,len,f,u,r1,r3)
+        ! do n = 4, nx - 3
+        !     do l = 1, len
+        !         f(l, n) = u(l, n - 1)*r1(n) + u(l, n) + u(l, n + 1)*r3(n)
+        !     end do
+        ! end do
+        ! !$omp end target teams distribute parallel do
 
         ! -------------------------------------------------------------------
         ! Boundary; the last 3/2+1+1=3 rows might be different
