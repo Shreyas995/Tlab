@@ -812,7 +812,7 @@ contains
             if (any([BCS_DN, BCS_NN] == ibc_loc)) then
                 !$omp target teams distribute parallel do default(none) &
                 !$omp private(l) &
-                !$omp shared(len,f)
+                !$omp shared(len,f,nx)
                 do l = 1, len    
                     f(:, nx) = 0.0_wp
                 end do
