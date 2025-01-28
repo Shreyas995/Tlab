@@ -173,7 +173,7 @@ contains
         ! -------------------------------------------------------------------
         ! Interior points; accelerate
         do n = 4, nx - 3
-            !$omp target teams distribute parallel do collapse(2) default(none) &
+            !$omp target teams distribute parallel do default(none) &
             !$omp private(l) &
             !$omp shared(n,len,f,u,r1,r3)
             do l = 1, len
