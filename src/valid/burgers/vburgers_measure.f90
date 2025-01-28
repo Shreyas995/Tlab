@@ -134,7 +134,7 @@
    ! bcs_hb = 0.0_wp; bcs_ht = 0.0_wp
 
    if (ims_pro == 0) then
-      write (*, *) '----------------------------------------------------- '
+      write (*, *) '-------------------------------------------------------- '
    end if
 
    ! Call everything once to get the memory initialized on the APUs
@@ -175,7 +175,7 @@
    call output_sum(e, 'OPR_ELLIP') ! p
 
    if (ims_pro == 0) then
-      write (*, *) '----------------------------------------------------- '
+      write (*, *) '-------------------------------------------------------- '
    end if
 
    ! reset time for transpositions to avoid measuring first-touch penalty
@@ -264,7 +264,7 @@
    PRINT 101, 'MATMUL5D_SYM  ',mat5dsym_time/nrun, 100*mat5dsym_time/SUM(runtime)
    PRINT 101, 'MATMUL3D_ADD  ',mat3dadd_time/nrun, 100*mat3dadd_time/SUM(runtime)
    PRINT 101, 'MATMUL3D      ',mat3d_time/nrun, 100*mat3d_time/SUM(runtime)
-100 FORMAT('T MEAN|MIN|MAX [s] : ', F9.5, 1x, F9.5, 1x , F9.5)
+100 FORMAT('T MEAN|MIN|MAX                 [s]:', F7.3, 1x, F7.3, 1x , F7.3)
 101 FORMAT('Time per run in ',A15,'[s]:', F9.5,'s (', F7.4,'%)') 
 
    call TLab_STOP(0)
@@ -292,7 +292,7 @@
          call MPI_ALLREDUCE(dummy2, dummy, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ims_err)
 #endif
          if (ims_pro == 0) then
-            write (*, '(1X,A,A10,ES20.10)') 'Sum ', name, dummy
+            write (*, '(1X,A,A10,ES22.14)') 'Sum ', name, dummy
          end if
 
       end subroutine output_sum
