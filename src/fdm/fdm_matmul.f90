@@ -206,7 +206,7 @@ contains
         else
             !$omp target teams distribute parallel do default(none) &
             !$omp private(l) &
-            !$omp shared(len,f,nx,u,r1,r2,r3)
+            !$omp shared(len,f,nx,u,r1,r3)
             do l = 1, len
                 f(l, nx - 2) = u(l, nx - 3)*r1(nx - 2) + u(l, nx - 2) + u(l, nx - 1)*r3(nx - 2)
                 f(l, nx - 1) = u(l, nx - 2)*r1(nx - 1) + u(l, nx - 1) + u(l, nx)*r3(nx - 1)
