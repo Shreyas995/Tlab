@@ -124,6 +124,7 @@ contains
     ! #######################################################################
     ! Calculate f = f + B u, assuming B is tri-diagonal
     subroutine MatMul_3d_add(nx, len, r1, r2, r3, u, f)
+        use TLAB_VARS, only: mat3dadd_time
         integer(wi), intent(in) :: nx, len       ! m linear systems or size n
         real(wp), intent(in) :: r1(nx), r2(nx), r3(nx)
         real(wp), intent(in) :: u(len, nx)       ! function u
@@ -131,6 +132,19 @@ contains
 
         ! -------------------------------------------------------------------
         integer(wi) n
+
+        ! APU offloading 
+#ifdef USE_APU
+        integer(wi) l
+#endif
+        integer clock_0, clock_1, clock_cycle
+
+        ! -----------------------------------------------------------------------
+        ! Profiling
+        ! -----------------------------------------------------------------------
+        call SYSTEM_CLOCK(clock_0,clock_cycle) 
+        
+#ifndef USE_APU
 
         ! -------------------------------------------------------------------
         ! Boundary
@@ -148,11 +162,57 @@ contains
         n = nx
         f(:, n) = f(:, n) + u(:, n - 1)*r1(n) + u(:, n)*r2(n)
 
+        ! -----------------------------------------------------------------------
+        ! With APU ACCELERATION 
+        ! -----------------------------------------------------------------------
+#else
+        ! -------------------------------------------------------------------
+        ! Boundary
+        n = 1
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(len,f,u,n,r2,r3)
+        do l = 1, len
+            f(l, n) = f(l, n) + u(l, n)*r2(n) + u(l, n + 1)*r3(n)
+        end do
+        !$omp end target teams distribute parallel do
+        ! -------------------------------------------------------------------
+        ! Interior points; accelerate
+        do n = 2, nx - 1
+            !$omp target teams distribute parallel do default(none) &
+            !$omp private(l) &
+            !$omp shared(len,f,u,n,r1,r2,r3)
+            do l = 1, len
+                f(l, n) = f(l, n) + u(l, n - 1)*r1(n) + u(l, n)*r2(n) + u(l, n + 1)*r3(n)
+            end do
+            !$omp end target teams distribute parallel do
+        end do
+
+        ! -------------------------------------------------------------------
+        ! Boundary
+        n = nx
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(len,f,u,n,r1,r2)
+        do l = 1, len
+            f(l, n) = f(l, n) + u(l, n - 1)*r1(n) + u(l, n)*r2(n)
+        end do
+        !$omp end target teams distribute parallel do
+
+#endif
+
+        ! -----------------------------------------------------------------------
+        ! Profiling
+        ! -----------------------------------------------------------------------
+        call SYSTEM_CLOCK(clock_1)
+        mat3dadd_time = mat3dadd_time + real(clock_1 - clock_0)/ clock_cycle 
+
         return
     end subroutine MatMul_3d_add
 
     ! #######################################################################
     subroutine MatMul_3d_antisym(nx, len, r1, r2, r3, u, f, periodic, ibc, rhs_b, rhs_t, bcs_b, bcs_t)
+        use 
         integer(wi), intent(in) :: nx, len                      ! m linear systems or size n
         real(wp), intent(in) :: r1(nx), r2(nx), r3(nx)          ! RHS diagonals
         real(wp), intent(in) :: u(len, nx)                      ! function u
