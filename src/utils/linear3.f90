@@ -89,7 +89,7 @@ subroutine TRIDSS(nmax, len, a, b, c, f)
 ! -----------------------------------------------------------------------
     call SYSTEM_CLOCK(clock_0,clock_cycle) 
 
-#ifndef USE_APU
+! #ifndef USE_APU
 
 ! -----------------------------------------------------------------------
 ! Forward sweep
@@ -161,49 +161,49 @@ subroutine TRIDSS(nmax, len, a, b, c, f)
 ! With APU ACCELERATION 
 ! -----------------------------------------------------------------------
 
-#else
+! #else
 
-    ! Forward sweep
-    do n = 2, nmax
-        dummy1 = a(n)
+!     ! Forward sweep
+!     do n = 2, nmax
+!         dummy1 = a(n)
 
-        !$omp target teams distribute parallel do default(none) &
-        !$omp private(l) &
-        !$omp shared(f,dummy1,n,len)
-        do l = 1, len
-            f(l, n) = f(l, n) + dummy1*f(l, n - 1)
-        end do
-        !$omp end target teams distribute parallel do
+!         !$omp target teams distribute parallel do default(none) &
+!         !$omp private(l) &
+!         !$omp shared(f,dummy1,n,len)
+!         do l = 1, len
+!             f(l, n) = f(l, n) + dummy1*f(l, n - 1)
+!         end do
+!         !$omp end target teams distribute parallel do
 
-    end do
+!     end do
 
-    ! Backward sweep
-    dummy1 = b(nmax)
+!     ! Backward sweep
+!     dummy1 = b(nmax)
 
-    !$omp target teams distribute parallel do default(none) &
-    !$omp private(l) &
-    !$omp shared(f,dummy1,nmax,len)
-    do l = 1, len
-        f(l, nmax) = f(l, nmax)*dummy1
-    end do
-    !$omp end target teams distribute parallel do
+!     !$omp target teams distribute parallel do default(none) &
+!     !$omp private(l) &
+!     !$omp shared(f,dummy1,nmax,len)
+!     do l = 1, len
+!         f(l, nmax) = f(l, nmax)*dummy1
+!     end do
+!     !$omp end target teams distribute parallel do
 
-    do n = nmax - 1, 1, -1
-        dummy1 = c(n)
-        dummy2 = b(n)
+!     do n = nmax - 1, 1, -1
+!         dummy1 = c(n)
+!         dummy2 = b(n)
 
-        !$omp target teams distribute parallel do default(none) &
-        !$omp private(l) &
-        !$omp shared(f,dummy1, dummy2,n,len)
-        do l = 1, len
-            f(l, n) = (f(l, n) + dummy1*f(l, n + 1))*dummy2
-        end do
-        !$omp end target teams distribute parallel do
+!         !$omp target teams distribute parallel do default(none) &
+!         !$omp private(l) &
+!         !$omp shared(f,dummy1, dummy2,n,len)
+!         do l = 1, len
+!             f(l, n) = (f(l, n) + dummy1*f(l, n + 1))*dummy2
+!         end do
+!         !$omp end target teams distribute parallel do
 
 
-    end do
+!     end do
     
-#endif
+! #endif
 
 ! -----------------------------------------------------------------------
 ! Profiling
@@ -416,7 +416,7 @@ subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
 ! -----------------------------------------------------------------------
 call SYSTEM_CLOCK(clock_0,clock_cycle) 
 
-#ifndef USE_APU
+! #ifndef USE_APU
 
 ! -------------------------------------------------------------------
 ! Forward sweep
@@ -518,85 +518,85 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
 ! With APU ACCELERATION 
 ! -----------------------------------------------------------------------
 
-#else
+! #else
 
-! -------------------------------------------------------------------
-! Forward sweep
-! -------------------------------------------------------------------
-    dummy1 = b(1)
+! ! -------------------------------------------------------------------
+! ! Forward sweep
+! ! -------------------------------------------------------------------
+!     dummy1 = b(1)
     
-    !$omp target teams distribute parallel do default(none) &
-    !$omp private(l) &
-    !$omp shared(f,dummy1,len)
-    do l = 1, len
-        f(l, 1) = f(l, 1)*dummy1
-    end do
-    !$omp end target teams distribute parallel do
+!     !$omp target teams distribute parallel do default(none) &
+!     !$omp private(l) &
+!     !$omp shared(f,dummy1,len)
+!     do l = 1, len
+!         f(l, 1) = f(l, 1)*dummy1
+!     end do
+!     !$omp end target teams distribute parallel do
 
-    do n = 2, nmax - 1
-        dummy1 = a(n)
-        dummy2 = b(n)
+!     do n = 2, nmax - 1
+!         dummy1 = a(n)
+!         dummy2 = b(n)
 
-        !$omp target teams distribute parallel do default(none) &
-        !$omp private(l) &
-        !$omp shared(f,n,dummy1,dummy2,len)
-        do l = 1, len
-            f(l, n) = f(l, n)*dummy2 + dummy1*f(l, n - 1)
-        end do
-        !$omp end target teams distribute parallel do
-    end do
+!         !$omp target teams distribute parallel do default(none) &
+!         !$omp private(l) &
+!         !$omp shared(f,n,dummy1,dummy2,len)
+!         do l = 1, len
+!             f(l, n) = f(l, n)*dummy2 + dummy1*f(l, n - 1)
+!         end do
+!         !$omp end target teams distribute parallel do
+!     end do
 
-    wrk(1:len) = 0.0_wp
+!     wrk(1:len) = 0.0_wp
 
     
-    !$omp target teams distribute parallel do collapse(2) default(none) &
-    !$omp private(n,l) &
-    !$omp shared(wrk,nmax,d,f,len)
-    do n = 1, nmax - 1
-        ! dummy1 = d(n)
-        do l = 1, len
-            wrk(l) = wrk(l) + d(n)*f(l, n)
-            ! wrk(l) = wrk(l) + dummy1*f(l, n)
-        end do
-    end do
-    !$omp end target teams distribute parallel do
+!     !$omp target teams distribute parallel do collapse(2) default(none) &
+!     !$omp private(n,l) &
+!     !$omp shared(wrk,nmax,d,f,len)
+!     do n = 1, nmax - 1
+!         ! dummy1 = d(n)
+!         do l = 1, len
+!             wrk(l) = wrk(l) + d(n)*f(l, n)
+!             ! wrk(l) = wrk(l) + dummy1*f(l, n)
+!         end do
+!     end do
+!     !$omp end target teams distribute parallel do
 
-    dummy1 = b(nmax)
-    !$omp target teams distribute parallel do default(none) &
-    !$omp private(l) &
-    !$omp shared(f,nmax,wrk,dummy1,f,len)
-    do l = 1, len
-        f(l, nmax) = (f(l, nmax) - wrk(l))*dummy1
-    end do
-    !$omp end target teams distribute parallel do
+!     dummy1 = b(nmax)
+!     !$omp target teams distribute parallel do default(none) &
+!     !$omp private(l) &
+!     !$omp shared(f,nmax,wrk,dummy1,f,len)
+!     do l = 1, len
+!         f(l, nmax) = (f(l, nmax) - wrk(l))*dummy1
+!     end do
+!     !$omp end target teams distribute parallel do
 
-! -------------------------------------------------------------------
-! Backward sweep
-! -------------------------------------------------------------------
-    dummy1 = e(nmax - 1)
+! ! -------------------------------------------------------------------
+! ! Backward sweep
+! ! -------------------------------------------------------------------
+!     dummy1 = e(nmax - 1)
 
-    !$omp target teams distribute parallel do default(none) &
-    !$omp private(l) &
-    !$omp shared(f,nmax,wrk,dummy1,f,len)
-    do l = 1, len
-        f(l, nmax - 1) = dummy1*f(l, nmax) + f(l, nmax - 1)
-    end do
-    !$omp end target teams distribute parallel do
+!     !$omp target teams distribute parallel do default(none) &
+!     !$omp private(l) &
+!     !$omp shared(f,nmax,wrk,dummy1,f,len)
+!     do l = 1, len
+!         f(l, nmax - 1) = dummy1*f(l, nmax) + f(l, nmax - 1)
+!     end do
+!     !$omp end target teams distribute parallel do
 
-    do n = nmax - 2, 1, -1
-        dummy1 = c(n)
-        dummy2 = e(n)
+!     do n = nmax - 2, 1, -1
+!         dummy1 = c(n)
+!         dummy2 = e(n)
 
-        !$omp target teams distribute parallel do default(none) &
-        !$omp private(l) &
-        !$omp shared(f,nmax,dummy1,dummy2,f,len,n)
-        do l = 1, len
-            f(l, n) = f(l, n) + dummy1*f(l, n + 1) + dummy2*f(l, nmax)
-        end do
-        !$omp end target teams distribute parallel do
-    end do
+!         !$omp target teams distribute parallel do default(none) &
+!         !$omp private(l) &
+!         !$omp shared(f,nmax,dummy1,dummy2,f,len,n)
+!         do l = 1, len
+!             f(l, n) = f(l, n) + dummy1*f(l, n + 1) + dummy2*f(l, nmax)
+!         end do
+!         !$omp end target teams distribute parallel do
+!     end do
 
-#endif
+! #endif
 
 ! -----------------------------------------------------------------------
 ! Profiling
