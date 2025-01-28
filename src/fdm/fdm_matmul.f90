@@ -249,7 +249,7 @@ contains
         ! -----------------------------------------------------------------------
         call SYSTEM_CLOCK(clock_0,clock_cycle) 
         
-! #ifndef USE_APU
+#ifndef USE_APU
 
         ! -------------------------------------------------------------------
         ! Boundary
@@ -270,41 +270,41 @@ contains
         ! -----------------------------------------------------------------------
         ! With APU ACCELERATION 
         ! -----------------------------------------------------------------------
-! #else
-!         ! -------------------------------------------------------------------
-!         ! Boundary
-!         n = 1
-!         !$omp target teams distribute parallel do default(none) &
-!         !$omp private(l) &
-!         !$omp shared(len,f,u,n,r2,r3)
-!         do l = 1, len
-!             f(l, n) = f(l, n) + u(l, n)*r2(n) + u(l, n + 1)*r3(n)
-!         end do
-!         !$omp end target teams distribute parallel do
-!         ! -------------------------------------------------------------------
-!         ! Interior points; accelerate
-!         !$omp target teams distribute parallel do collapse(2) default(none) &
-!         !$omp private(n,l) &
-!         !$omp shared(len,f,u,nx,r1,r2,r3)
-!         do n = 2, nx - 1
-!             do l = 1, len
-!                 f(l, n) = f(l, n) + u(l, n - 1)*r1(n) + u(l, n)*r2(n) + u(l, n + 1)*r3(n)
-!             end do
-!         end do
-!         !$omp end target teams distribute parallel do
+#else
+        ! -------------------------------------------------------------------
+        ! Boundary
+        n = 1
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(len,f,u,n,r2,r3)
+        do l = 1, len
+            f(l, n) = f(l, n) + u(l, n)*r2(n) + u(l, n + 1)*r3(n)
+        end do
+        !$omp end target teams distribute parallel do
+        ! -------------------------------------------------------------------
+        ! Interior points; accelerate
+        !$omp target teams distribute parallel do collapse(2) default(none) &
+        !$omp private(n,l) &
+        !$omp shared(len,f,u,nx,r1,r2,r3)
+        do n = 2, nx - 1
+            do l = 1, len
+                f(l, n) = f(l, n) + u(l, n - 1)*r1(n) + u(l, n)*r2(n) + u(l, n + 1)*r3(n)
+            end do
+        end do
+        !$omp end target teams distribute parallel do
 
-!         ! -------------------------------------------------------------------
-!         ! Boundary
-!         n = nx
-!         !$omp target teams distribute parallel do default(none) &
-!         !$omp private(l) &
-!         !$omp shared(len,f,u,n,r1,r2)
-!         do l = 1, len
-!             f(l, n) = f(l, n) + u(l, n - 1)*r1(n) + u(l, n)*r2(n)
-!         end do
-!         !$omp end target teams distribute parallel do
+        ! -------------------------------------------------------------------
+        ! Boundary
+        n = nx
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(len,f,u,n,r1,r2)
+        do l = 1, len
+            f(l, n) = f(l, n) + u(l, n - 1)*r1(n) + u(l, n)*r2(n)
+        end do
+        !$omp end target teams distribute parallel do
 
-! #endif
+#endif
 
         ! -----------------------------------------------------------------------
         ! Profiling
