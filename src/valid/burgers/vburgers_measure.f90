@@ -42,7 +42,8 @@
 
    trans_time = 0.0_wp
    tridss_time = 0.0_wp
-   mat5d_time = 0.0_wp
+   mat5dantisym_time = 0.0_wp
+   mat5dsym_time = 0.0_wp
    tridpss_time = 0.0_wp
    add_time = 0.0_wp
 
@@ -143,7 +144,8 @@
    trans_time = 0.0_wp
    tridss_time = 0.0_wp
    tridpss_time = 0.0_wp
-   mat5d_time = 0.0_wp
+   mat5dantisym_time = 0.0_wp
+   mat5dsym_time = 0.0_wp
 
    DO irun=1,nrun
 
@@ -200,13 +202,14 @@
       runtime(irun) = real(clock_1-clock_0)/clock_cycle
    ENDDO
    PRINT 100,SUM(runtime)/nrun, MINVAL(runtime),MAXVAL(runtime)
-   PRINT 101, 'Transpos',trans_time/nrun, 100*trans_time/SUM(runtime)
-   PRINT 101, 'Addition',add_time/nrun, 100*add_time/SUM(runtime) 
-   PRINT 101, 'TRIDSS  ',tridss_time/nrun, 100*tridss_time/SUM(runtime)
-   PRINT 101, 'TRIDPSS ',tridpss_time/nrun, 100*tridpss_time/SUM(runtime)
-   PRINT 101, 'MATMUL5D',mat5d_time/nrun, 100*mat5d_time/SUM(runtime)
+   PRINT 101, 'Transpos     ',trans_time/nrun, 100*trans_time/SUM(runtime)
+   PRINT 101, 'Addition     ',add_time/nrun, 100*add_time/SUM(runtime) 
+   PRINT 101, 'TRIDSS       ',tridss_time/nrun, 100*tridss_time/SUM(runtime)
+   PRINT 101, 'TRIDPSS      ',tridpss_time/nrun, 100*tridpss_time/SUM(runtime)
+   PRINT 101, 'MATMUL5D_ANTI',mat5dantisym_time/nrun, 100*mat5dantisym_time/SUM(runtime)
+   PRINT 101, 'MATMUL5D_ANTI',mat5dsym_time/nrun, 100*mat5dsym_time/SUM(runtime)
 100 FORMAT('T MEAN|MIN|MAX [s] : ', F9.5, 1x, F9.5, 1x , F9.5)
-101 FORMAT('Time per run in ',A9,'[s]:', F9.5,'s (', F5.2,'%)') 
+101 FORMAT('Time per run in ',A14,'[s]:', F9.5,'s (', F5.2,'%)') 
    call TLab_STOP(0)
 
    ! ----------------------------------------------------

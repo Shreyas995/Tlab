@@ -215,7 +215,7 @@ contains
             case (5)
                 call MatMul_5d_sym(g%size, nlines, g%rhs2(:, 1), g%rhs2(:, 2), g%rhs2(:, 3), g%rhs2(:, 4), g%rhs2(:, 5), u, result, g%periodic)
             case (7)
-     call MatMul_7d_sym(g%size, nlines, g%rhs2(:, 1), g%rhs2(:, 2), g%rhs2(:, 3), g%rhs2(:, 4), g%rhs2(:, 5), g%rhs2(:, 6), g%rhs2(:, 7), u, result, g%periodic)
+                call MatMul_7d_sym(g%size, nlines, g%rhs2(:, 1), g%rhs2(:, 2), g%rhs2(:, 3), g%rhs2(:, 4), g%rhs2(:, 5), g%rhs2(:, 6), g%rhs2(:, 7), u, result, g%periodic)
             end select
             if (g%need_1der) then
                 ip = g%nb_diag_2(2)      ! add Jacobian correction A_2 dx2 du

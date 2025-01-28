@@ -519,10 +519,10 @@ contains
 
 !########################################################################
 !#
-!# Solve Lap a + lpha a = f using Fourier in xOz planes, to rewritte
+!# Solve Lap a + alpha a = f using Fourier in xOz planes, to rewritte
 !# the problem as
 !#
-!#      \hat{a}''-(\lambda-lpha) \hat{a} = \hat{f}
+!#      \hat{a}''-(\lambda-alpha) \hat{a} = \hat{f}
 !#
 !# where \lambda = kx^2+kz^2
 !#
@@ -565,7 +565,7 @@ contains
         end if
 
         ! ###################################################################
-        ! Solve FDE (\hat{p}')'-(\lambda+lpha) \hat{p} = \hat{f}
+        ! Solve FDE (\hat{p}')'-(\lambda+alpha) \hat{p} = \hat{f}
         ! ###################################################################
         do k = 1, nz
 #ifdef USE_MPI
@@ -678,7 +678,7 @@ contains
         end if
 
         ! ###################################################################
-        ! Solve FDE \hat{p}''-(\lambda+lpha) \hat{p} = \hat{f}
+        ! Solve FDE \hat{p}''-(\lambda+alpha) \hat{p} = \hat{f}
         ! ###################################################################
         do k = 1, nz
 #ifdef USE_MPI
@@ -828,7 +828,7 @@ contains
 !         end do
 
 !         ! ###################################################################
-!         ! Solve FDE \hat{p}''-(\lambda+lpha) \hat{p} = \hat{f}
+!         ! Solve FDE \hat{p}''-(\lambda+alpha) \hat{p} = \hat{f}
 !         ! ###################################################################
 !         do k = 1, nz
 ! #ifdef USE_MPI
