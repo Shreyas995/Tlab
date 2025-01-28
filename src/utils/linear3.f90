@@ -554,39 +554,28 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
     end do
     !$omp end target teams distribute parallel do
 
+    do n = 1, nmax - 1
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(wrk,n,d,f,len)
+        do l = 1, len
+            wrk(l) = wrk(l) + d(n)*f(l, n)
+        end do
+        !$omp end target teams distribute parallel do
+    end do
 
-
-
+    ! ############################################################
+    ! # Something goes wrong here
+    ! ############################################################
+    ! !$omp target teams distribute parallel do collapse(2) reduction(+:wrk) default(none) &
+    ! !$omp private(n,l) &
+    ! !$omp shared(nmax,d,f,len)
     ! do n = 1, nmax - 1
-    !     !$omp target teams distribute parallel do default(none) &
-    !     !$omp private(l) &
-    !     !$omp shared(wrk,n,d,f,len)
     !     do l = 1, len
     !         wrk(l) = wrk(l) + d(n)*f(l, n)
     !     end do
-    !     !$omp end target teams distribute parallel do
     ! end do
-
-
-
-
-
-    !$omp target teams distribute parallel do collapse(2) reduction(+:wrk) default(none) &
-    !$omp private(n,l) &
-    !$omp shared(nmax,d,f,len)
-    do l = 1, len
-        do n = 1, nmax - 1
-            wrk(l) = wrk(l) + d(n)*f(l, n)
-        end do
-    end do
-    !$omp end target teams distribute parallel do
-
-
-
-
-
-
-
+    ! !$omp end target teams distribute parallel do
 
     dummy1 = b(nmax)
     !$omp target teams distribute parallel do default(none) &
