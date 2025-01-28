@@ -78,7 +78,7 @@ contains
         ! -----------------------------------------------------------------------
         call SYSTEM_CLOCK(clock_0,clock_cycle) 
         
-! #ifndef USE_APU
+#ifndef USE_APU
 
 #define r0_b(j) rhs_b(j,0)
 #define r1_b(j) rhs_b(j,1)
@@ -135,98 +135,98 @@ contains
         ! With APU ACCELERATION 
         ! not possible to use rx_b preprocessors here!
         ! -----------------------------------------------------------------------
-! #else
+#else
 
-!         ! -------------------------------------------------------------------
-!         ! Boundary; the first 3/2+1+1=3 rows might be different
-!         if (any([BCS_MIN, BCS_BOTH] == ibc_loc)) then
-!             if (present(bcs_b)) then
-!                 !$omp target teams distribute parallel do default(none) &
-!                 !$omp private(l) &
-!                 !$omp shared(len,bcs_b,f,rhs_b,u)
-!                 do l = 1, len
-!                     bcs_b(l) = f(l, 1)*rhs_b(1,2) + u(l, 2)*rhs_b(1,3) + u(l, 3)*rhs_b(1,1) ! r1(1) contains extended stencil
-!                 end do
-!                 !$omp end target teams distribute parallel do
-!             end if
-!             ! f(1) contains the boundary condition
-!             !$omp target teams distribute parallel do default(none) &
-!             !$omp private(l) &
-!             !$omp shared(len,f,rhs_b,u)
-!             do l = 1, len
-!                 f(l, 2) = f(l, 1)*rhs_b(2,1) + u(l, 2)*rhs_b(2,2) + u(l, 3)*rhs_b(2,3)
-!                 f(l, 3) = f(l, 1)*rhs_b(3,0) + u(l, 2)*rhs_b(3,1) + u(l, 3)*rhs_b(3,2) + u(l, 4)*rhs_b(3,3)
-!             end do
-!             !$omp end target teams distribute parallel do
-!         else
-!             !$omp target teams distribute parallel do default(none) &
-!             !$omp private(l) &  
-!             !$omp shared(len,f,u,r1,r3)
-!             do l = 1, len
-!                 f(l, 1) = u(l, 1)       + u(l, 2)*r3(1) + u(l, 3)*r1(1)   ! r1(1) contains extended stencil
-!                 f(l, 2) = u(l, 1)*r1(2) + u(l, 2)       + u(l, 3)*r3(2)
-!                 f(l, 3) = u(l, 2)*r1(3) + u(l, 3)       + u(l, 4)*r3(3)
-!             end do
-!             !$omp end target teams distribute parallel do
-!         end if
+        ! -------------------------------------------------------------------
+        ! Boundary; the first 3/2+1+1=3 rows might be different
+        if (any([BCS_MIN, BCS_BOTH] == ibc_loc)) then
+            if (present(bcs_b)) then
+                !!$omp target teams distribute parallel do default(none) &
+                !!$omp private(l) &
+                !!$omp shared(len,bcs_b,f,rhs_b,u)
+                do l = 1, len
+                    bcs_b(l) = f(l, 1)*rhs_b(1,2) + u(l, 2)*rhs_b(1,3) + u(l, 3)*rhs_b(1,1) ! r1(1) contains extended stencil
+                end do
+                !!$omp end target teams distribute parallel do
+            end if
+            ! f(1) contains the boundary condition
+            !!$omp target teams distribute parallel do default(none) &
+            !!$omp private(l) &
+            !!$omp shared(len,f,rhs_b,u)
+            do l = 1, len
+                f(l, 2) = f(l, 1)*rhs_b(2,1) + u(l, 2)*rhs_b(2,2) + u(l, 3)*rhs_b(2,3)
+                f(l, 3) = f(l, 1)*rhs_b(3,0) + u(l, 2)*rhs_b(3,1) + u(l, 3)*rhs_b(3,2) + u(l, 4)*rhs_b(3,3)
+            end do
+            !!$omp end target teams distribute parallel do
+        else
+            !!$omp target teams distribute parallel do default(none) &
+            !!$omp private(l) &  
+            !!$omp shared(len,f,u,r1,r3)
+            do l = 1, len
+                f(l, 1) = u(l, 1)       + u(l, 2)*r3(1) + u(l, 3)*r1(1)   ! r1(1) contains extended stencil
+                f(l, 2) = u(l, 1)*r1(2) + u(l, 2)       + u(l, 3)*r3(2)
+                f(l, 3) = u(l, 2)*r1(3) + u(l, 3)       + u(l, 4)*r3(3)
+            end do
+            !!$omp end target teams distribute parallel do
+        end if
 
-!         ! -------------------------------------------------------------------
-!         ! Interior points; accelerate
-!         do n = 4, nx - 3
-!         !     !$omp target teams distribute parallel do default(none) &
-!         !     !$omp private(l) &
-!         !     !$omp shared(n,len,f,u,r1,r3)
-!             do l = 1, len
-!                 f(l, n) = u(l, n - 1)*r1(n) + u(l, n) + u(l, n + 1)*r3(n)
-!             end do
-!           !  !$omp end target teams distribute parallel do
-!         end do
+        ! -------------------------------------------------------------------
+        ! Interior points; accelerate
+        do n = 4, nx - 3
+        !     !!$omp target teams distribute parallel do default(none) &
+        !     !!$omp private(l) &
+        !     !!$omp shared(n,len,f,u,r1,r3)
+            do l = 1, len
+                f(l, n) = u(l, n - 1)*r1(n) + u(l, n) + u(l, n + 1)*r3(n)
+            end do
+          !  !!$omp end target teams distribute parallel do
+        end do
 
 
-!         ! !$omp target teams distribute parallel do collapse(2) default(none) &
-!         ! !$omp private(n,l) &
-!         ! !$omp shared(nx,len,f,u,r1,r3)
-!         ! do n = 4, nx - 3
-!         !     do l = 1, len
-!         !         f(l, n) = u(l, n - 1)*r1(n) + u(l, n) + u(l, n + 1)*r3(n)
-!         !     end do
-!         ! end do
-!         ! !$omp end target teams distribute parallel do
+        ! !!$omp target teams distribute parallel do collapse(2) default(none) &
+        ! !!$omp private(n,l) &
+        ! !!$omp shared(nx,len,f,u,r1,r3)
+        ! do n = 4, nx - 3
+        !     do l = 1, len
+        !         f(l, n) = u(l, n - 1)*r1(n) + u(l, n) + u(l, n + 1)*r3(n)
+        !     end do
+        ! end do
+        ! !!$omp end target teams distribute parallel do
 
-!         ! -------------------------------------------------------------------
-!         ! Boundary; the last 3/2+1+1=3 rows might be different
-!         if (any([BCS_MAX, BCS_BOTH] == ibc_loc)) then
-!             ! f(nx) contains the boundary condition
-!             !$omp target teams distribute parallel do default(none) &
-!             !$omp private(l) &
-!             !$omp shared(len,f,nx,u,rhs_t)
-!             do l = 1, len
-!                 f(l, nx - 2) = u(l, nx - 3)*rhs_t(0,1) + u(l, nx - 2)*rhs_t(0,2) + u(l, nx - 1)*rhs_t(0,3) + f(l, nx)*rhs_t(0,4)
-!                 f(l, nx - 1) = u(l, nx - 2)*rhs_t(1,1) + u(l, nx - 1)*rhs_t(1,2) + f(l, nx)*rhs_t(1,3)
-!             end do
-!             !$omp end target teams distribute parallel do
-!             if (present(bcs_t)) then
-!                 !$omp target teams distribute parallel do default(none) &
-!                 !$omp private(l) &
-!                 !$omp shared(len,bcs_t,f,nx,u,rhs_t)
-!                 do l = 1, len
-!                     bcs_t(l) = u(l, nx - 2)*rhs_t(2,3) + u(l, nx - 1)*rhs_t(2,1) + f(l, nx)*rhs_t(2,2) ! r3(nx) contains extended stencil
-!                 end do
-!                 !$omp end target teams distribute parallel do
-!             end if
-!         else
-!             !$omp target teams distribute parallel do default(none) &
-!             !$omp private(l) &
-!             !$omp shared(len,f,nx,u,r1,r3)
-!             do l = 1, len
-!                 f(l, nx - 2) = u(l, nx - 3)*r1(nx - 2) + u(l, nx - 2) + u(l, nx - 1)*r3(nx - 2)
-!                 f(l, nx - 1) = u(l, nx - 2)*r1(nx - 1) + u(l, nx - 1) + u(l, nx)*r3(nx - 1)
-!                 f(l, nx) = u(l, nx - 2)*r3(nx) + u(l, nx - 1)*r1(nx) + u(l, nx) ! r3(nx) contains extended stencil
-!             end do
-!             !$omp end target teams distribute parallel do
-!         end if
+        ! -------------------------------------------------------------------
+        ! Boundary; the last 3/2+1+1=3 rows might be different
+        if (any([BCS_MAX, BCS_BOTH] == ibc_loc)) then
+            ! f(nx) contains the boundary condition
+            !!$omp target teams distribute parallel do default(none) &
+            !!$omp private(l) &
+            !!$omp shared(len,f,nx,u,rhs_t)
+            do l = 1, len
+                f(l, nx - 2) = u(l, nx - 3)*rhs_t(0,1) + u(l, nx - 2)*rhs_t(0,2) + u(l, nx - 1)*rhs_t(0,3) + f(l, nx)*rhs_t(0,4)
+                f(l, nx - 1) = u(l, nx - 2)*rhs_t(1,1) + u(l, nx - 1)*rhs_t(1,2) + f(l, nx)*rhs_t(1,3)
+            end do
+            !!$omp end target teams distribute parallel do
+            if (present(bcs_t)) then
+                !!$omp target teams distribute parallel do default(none) &
+                !!$omp private(l) &
+                !!$omp shared(len,bcs_t,f,nx,u,rhs_t)
+                do l = 1, len
+                    bcs_t(l) = u(l, nx - 2)*rhs_t(2,3) + u(l, nx - 1)*rhs_t(2,1) + f(l, nx)*rhs_t(2,2) ! r3(nx) contains extended stencil
+                end do
+                !!$omp end target teams distribute parallel do
+            end if
+        else
+            !!$omp target teams distribute parallel do default(none) &
+            !!$omp private(l) &
+            !!$omp shared(len,f,nx,u,r1,r3)
+            do l = 1, len
+                f(l, nx - 2) = u(l, nx - 3)*r1(nx - 2) + u(l, nx - 2) + u(l, nx - 1)*r3(nx - 2)
+                f(l, nx - 1) = u(l, nx - 2)*r1(nx - 1) + u(l, nx - 1) + u(l, nx)*r3(nx - 1)
+                f(l, nx) = u(l, nx - 2)*r3(nx) + u(l, nx - 1)*r1(nx) + u(l, nx) ! r3(nx) contains extended stencil
+            end do
+            !!$omp end target teams distribute parallel do
+        end if
 
-! #endif
+#endif
 
         ! -----------------------------------------------------------------------
         ! Profiling
