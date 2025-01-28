@@ -598,8 +598,8 @@ contains
             !$omp shared(len,f,u,nx,r5_loc)
             do l = 1, len
                 f(l, 1) = u(l, 2) - u(l, nx) + r5_loc*(u(l, 3) - u(l, nx - 1))
-                f(l, 2) = u(l, 3) - u(l, 1) + r5_loc*(u(l, 4) - u(l, nx))
-                f(l, 3) = u(l, 4) - u(l, 2) + r5_loc*(u(l, 5) - u(l, 1))
+                f(l, 2) = u(l, 3) - u(l, 1 ) + r5_loc*(u(l, 4) - u(l, nx))
+                f(l, 3) = u(l, 4) - u(l, 2 ) + r5_loc*(u(l, 5) - u(l, 1))
             end do
             !$omp end target teams distribute parallel do
 
@@ -634,15 +634,15 @@ contains
         end if
 
         ! Interior points
+        !$omp target teams distribute parallel do collapse(2) default(none) &
+        !$omp private(n,l) &
+        !$omp shared(len,f,u,nx,r5_loc)
         do n = 4, nx - 3
-            !$omp target teams distribute parallel do default(none) &
-            !$omp private(l) &
-            !$omp shared(len,f,u,n,r5_loc)
             do l = 1, len
                 f(l, n) = u(l, n + 1) - u(l, n - 1) + r5_loc*(u(l, n + 2) - u(l, n - 2))
             end do
-            !$omp end target teams distribute parallel do
         end do
+        !$omp end target teams distribute parallel do
 
         ! Boundary
         if (periodic) then

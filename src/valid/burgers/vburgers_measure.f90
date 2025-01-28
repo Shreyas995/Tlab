@@ -167,6 +167,7 @@
    call output_sum(tmp1, 'OPR_BUR_Z')
    if (ims_pro == 0) write (*, *) '------------------- '
 
+   e = a
    call OPR_Poisson(imax, jmax, kmax, g, ibc, e, b, d, bcs_hb, bcs_ht, c)
    call output_sum(c, 'OPR_ELLIP') ! dpdy
    call output_sum(e, 'OPR_ELLIP') ! p
