@@ -161,7 +161,7 @@ contains
         else
             !$omp target teams distribute parallel do default(none) &
             !$omp private(l) &  
-            !$omp shared(len,f,u,r1,r2,r3)
+            !$omp shared(len,f,u,r1,r3)
             do l = 1, len
                 f(l, 1) = u(l, 1)       + u(l, 2)*r3(1) + u(l, 3)*r1(1)   ! r1(1) contains extended stencil
                 f(l, 2) = u(l, 1)*r1(2) + u(l, 2)       + u(l, 3)*r3(2)
