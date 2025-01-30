@@ -133,11 +133,11 @@ endif()
 # Cloud
 FILE(GLOB sourcefiles "cloud/state.f90")
 add_executable(state.x ${sourcefiles})
-target_link_libraries(state.x io thermodynamics ${LEVEL1_LIBS} ${LIBS})
+target_link_libraries(state.x io thermodynamics fdm ${LEVEL1_LIBS} ${LIBS})
 
 FILE(GLOB sourcefiles "cloud/smooth.f90")
 add_executable(smooth.x ${sourcefiles})
-target_link_libraries(smooth.x io thermodynamics ${LEVEL1_LIBS} ${LIBS})
+target_link_libraries(smooth.x io thermodynamics fdm ${LEVEL1_LIBS} ${LIBS})
 
 FILE(GLOB sourcefiles "cloud/saturation.f90")
 add_executable(saturation.x ${sourcefiles})
