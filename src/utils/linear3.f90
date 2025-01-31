@@ -396,7 +396,7 @@ subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
 
     integer(wi), intent(IN) :: nmax, len
     real(wp), dimension(nmax), intent(IN) :: a, b, c, d, e
-    real(wp), dimension(len, nmax), intent(INOUT) :: f
+    real(wp), dimension(len* nmax), intent(INOUT) :: f
     real(wp), dimension(len) :: wrk
 
 ! -------------------------------------------------------------------
@@ -521,68 +521,70 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
 ! -----------------------------------------------------------------------
 
 #else
+ 
+    ! !$omp target teams distribute parallel do default(none) &
+    ! !$omp private(l) &
+    ! !$omp shared(f,len,n,nmax,wrk,a,b,c,d,e)
+    ! do l = 1, len
+    !     ! -------------------------------------------------------------------
+    !     ! Forward sweep
+    !     ! -------------------------------------------------------------------
+    !     f(l, 1) = f(l, 1)*b(1)
 
-! -------------------------------------------------------------------
-! Forward sweep
-! -------------------------------------------------------------------
-    
+    !     wrk(l) = 0.0_wp
+
+    !     do n = 2, nmax - 1
+    !         f(l, n) = f(l, n)*b(n) + a(n)*f(l, n - 1) 
+    !         wrk(l) = wrk(l) + d(n)*f(l, n)
+    !     end do
+
+    !     wrk(l) = wrk(l) + d(1)*f(l, 1)
+
+    !     f(l, nmax) = (f(l, nmax) - wrk(l))*b(nmax)
+
+    !     ! -------------------------------------------------------------------
+    !     ! Backward sweep
+    !     ! -------------------------------------------------------------------
+    !     f(l, nmax - 1) = e(nmax - 1)*f(l, nmax) + f(l, nmax - 1)
+    !     do n = nmax - 2, 1, -1
+    !         f(l, n) = f(l, n) + c(n)*f(l, n + 1) + e(n)*f(l, nmax)
+    !     end do
+    ! end do
+    ! !$omp end target teams distribute parallel do
+
     !$omp target teams distribute parallel do default(none) &
     !$omp private(l) &
     !$omp shared(f,len,n,nmax,wrk,a,b,c,d,e)
     do l = 1, len
+        ! -------------------------------------------------------------------
+        ! Forward sweep
+        ! -------------------------------------------------------------------
         f(l, 1) = f(l, 1)*b(1)
 
-        do n = 2, nmax - 1
-            f(l, n) = f(l, n)*b(n) + a(n)*f(l, n - 1)
-        end do
-    
         wrk(l) = 0.0_wp
-    
-        do n = 1, nmax - 1
-            wrk(l) = wrk(l) + d(n)*f(l, n)
+
+        do n = 2, nmax - 1
+            idx   = (n - 1) * len  ! Base index for column n
+            idx_p = (n - 2) * len  ! Base index for column n-1
+
+            f(idx + l) = f(idx + l) * b(n) + a(n) * f(idx_p + l)
+            wrk(l) = wrk(l) + d(n) * f(idx + l)
         end do
 
-        ! !$omp target teams distribute parallel do default(none) &
-        ! !$omp private(l, n, wrk_tmp) &
-        ! !$omp shared(wrk, d, f, len, nmax)
-        ! do l = 1, len
-        !     wrk_tmp = 0.0_wp
-        !     !DIR$ UNROLL 64
-        !     do n = 1, nmax - 1
-        !         wrk_tmp = wrk_tmp + d(n) * f(l, n)
-        !     end do
-        !     wrk(l) = wrk_tmp
-        ! end do
-        ! !$omp end target teams distribute parallel do
+        wrk(l) = wrk(l) + d(1) * f(len + l)
 
-        ! ############################################################
-        ! # Something goes wrong here
-        ! ############################################################
-        ! !$omp target teams distribute parallel do collapse(2) reduction(+:wrk) default(none) &
-        ! !$omp private(n,l) &
-        ! !$omp shared(nmax,d,f,len)
-        ! do n = 1, nmax - 1
-        !     do l = 1, len
-        !         wrk(l) = wrk(l) + d(n)*f(l, n)
-        !     end do
-        ! end do
-        ! !$omp end target teams distribute parallel do
-
-        ! !$omp target teams distribute parallel do default(none) &
-        ! !$omp private(l) &
-        ! !$omp shared(f,nmax,wrk,dummy1,f,len,b,c,e)
-
-        f(l, nmax) = (f(l, nmax) - wrk(l))*b(nmax)
-
-! -------------------------------------------------------------------
-! Backward sweep
-! -------------------------------------------------------------------
-        f(l, nmax - 1) = e(nmax - 1)*f(l, nmax) + f(l, nmax - 1)
+        f((nmax - 1) * len + l) = (f((nmax - 1) * len + l) - wrk(l)) * b(nmax)
+        ! -------------------------------------------------------------------
+        ! Backward sweep
+        ! -------------------------------------------------------------------
+        f((nmax - 2) * len + l) = e(nmax - 1) * f((nmax - 1) * len + l) + f((nmax - 2) * len + l)
         do n = nmax - 2, 1, -1
-            f(l, n) = f(l, n) + c(n)*f(l, n + 1) + e(n)*f(l, nmax)
+            f(l, n) = f(l, n) + c(n) * f(l, n + 1) + e(n) * f(l, nmax)
         end do
     end do
     !$omp end target teams distribute parallel do
+
+
 
 #endif
 
