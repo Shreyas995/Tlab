@@ -54,7 +54,7 @@ end subroutine TRIDFS
 ! Backward substitution step in the Thomas algorithm
 ! #######################################################################
 subroutine TRIDSS(nmax, len, a, b, c, f)
-    use TLab_Constants, only: wp, wi
+    use TLab_Constants, only: wp, wi, longi
     use TLab_OpenMP
     use TLAB_VARS, only: tridss_time
 
@@ -80,7 +80,7 @@ subroutine TRIDSS(nmax, len, a, b, c, f)
     real(wp) alpha
     integer ilen
 #else
-    integer(wi) l
+    integer(longi) l
 #endif
 
 ! ###################################################################
@@ -332,7 +332,7 @@ end subroutine TRIDSS_ADD
 ! LU factorization stage
 ! #######################################################################
 subroutine TRIDPFS(nmax, a, b, c, d, e)
-    use TLab_Constants, only: wp, wi
+    use TLab_Constants, only: wp, wi, longi
 
     implicit none
 
@@ -384,7 +384,7 @@ end subroutine TRIDPFS
 ! Backward substitution step in the Thomas algorith
 ! #######################################################################
 subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
-    use TLab_Constants, only: wp, wi
+    use TLab_Constants, only: wp, wi, longi
     use TLab_OpenMP
     use TLAB_VARS, only: tridpss_time
 
@@ -405,7 +405,7 @@ subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
 
     integer clock_0, clock_1, clock_cycle
 
-    integer(wi) l, n
+    integer(longi) l, n
     real(wp)  wrk_tmp
 
 #ifdef USE_BLAS
@@ -556,28 +556,28 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
     end do
     !$omp end target teams distribute parallel do
 
+    !$omp target teams distribute parallel do collapse(2) default(none) &
+    !$omp private(l,n) &
+    !$omp shared(wrk,nmax,d,f,len)
     do n = 1, nmax - 1
-        !$omp target teams distribute parallel do default(none) &
-        !$omp private(l,n) &
-        !$omp shared(wrk,nmax,d,f,len)
         do l = 1, len
             wrk(l) = wrk(l) + d(n)*f(l, n)
         end do
-        !$omp end target teams distribute parallel do
-    end do
-
-    !$omp target teams distribute parallel do default(none) &
-    !$omp private(l, n, wrk_tmp) &
-    !$omp shared(wrk, d, f, len, nmax)
-    do l = 1, len
-        wrk_tmp = 0.0_wp
-        !DIR$ UNROLL 64
-        do n = 1, nmax - 1
-            wrk_tmp = wrk_tmp + d(n) * f(l, n)
-        end do
-        wrk(l) = wrk_tmp
     end do
     !$omp end target teams distribute parallel do
+
+    ! !$omp target teams distribute parallel do default(none) &
+    ! !$omp private(l, n, wrk_tmp) &
+    ! !$omp shared(wrk, d, f, len, nmax)
+    ! do l = 1, len
+    !     wrk_tmp = 0.0_wp
+    !     !DIR$ UNROLL 64
+    !     do n = 1, nmax - 1
+    !         wrk_tmp = wrk_tmp + d(n) * f(l, n)
+    !     end do
+    !     wrk(l) = wrk_tmp
+    ! end do
+    ! !$omp end target teams distribute parallel do
 
     ! ############################################################
     ! # Something goes wrong here
@@ -592,7 +592,7 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
     ! end do
     ! !$omp end target teams distribute parallel do
 
-    !$omp target teams distribute parallel do collapse(2) default(none) &
+    !$omp target teams distribute parallel do default(none) &
     !$omp private(l) &
     !$omp shared(f,nmax,wrk,dummy1,f,len,b,c,e)
     do l = 1, len
