@@ -406,7 +406,7 @@ subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
     integer clock_0, clock_1, clock_cycle
 
     integer(wi) l, n
-    ! real(wp), allocatable :: wrk_tmp
+    real(wp), allocatable :: wrk_tmp
 
 #ifdef USE_BLAS
     integer :: ilen
@@ -570,7 +570,6 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
     !$omp private(l, n, wrk_tmp) &
     !$omp shared(wrk, d, f, len, nmax)
     do l = 1, len
-        real(wp) :: wrk_tmp  ! Declare as a scalar, not an array
         wrk_tmp = 0.0_wp
         !DIR$ UNROLL 64
         do n = 1, nmax - 1
