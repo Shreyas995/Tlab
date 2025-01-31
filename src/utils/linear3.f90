@@ -556,28 +556,28 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
     end do
     !$omp end target teams distribute parallel do
 
-    !$omp target teams distribute parallel do collapse(2) default(none) &
-    !$omp private(l,n) &
-    !$omp shared(wrk,nmax,d,f,len)
-    do n = 1, nmax - 1
-        do l = 1, len
-            wrk(l) = wrk(l) + d(n)*f(l, n)
-        end do
-    end do
-    !$omp end target teams distribute parallel do
-
-    ! !$omp target teams distribute parallel do default(none) &
-    ! !$omp private(l, n, wrk_tmp) &
-    ! !$omp shared(wrk, d, f, len, nmax)
-    ! do l = 1, len
-    !     wrk_tmp = 0.0_wp
-    !     !DIR$ UNROLL 64
-    !     do n = 1, nmax - 1
-    !         wrk_tmp = wrk_tmp + d(n) * f(l, n)
+    ! !$omp target teams distribute parallel do collapse(2) default(none) &
+    ! !$omp private(l,n) &
+    ! !$omp shared(wrk,nmax,d,f,len)
+    ! do n = 1, nmax - 1
+    !     do l = 1, len
+    !         wrk(l) = wrk(l) + d(n)*f(l, n)
     !     end do
-    !     wrk(l) = wrk_tmp
     ! end do
     ! !$omp end target teams distribute parallel do
+
+    !$omp target teams distribute parallel do default(none) &
+    !$omp private(l, n, wrk_tmp) &
+    !$omp shared(wrk, d, f, len, nmax)
+    do l = 1, len
+        wrk_tmp = 0.0_wp
+        !DIR$ UNROLL 64
+        do n = 1, nmax - 1
+            wrk_tmp = wrk_tmp + d(n) * f(l, n)
+        end do
+        wrk(l) = wrk_tmp
+    end do
+    !$omp end target teams distribute parallel do
 
     ! ############################################################
     ! # Something goes wrong here
