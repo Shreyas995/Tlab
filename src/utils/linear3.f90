@@ -406,7 +406,7 @@ subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
     integer clock_0, clock_1, clock_cycle
 
     integer(wi) l, n2
-    real(wp), allocatable :: wrk_tmp(:)
+    real(wp), allocatable :: wrk_tmp
 
 #ifdef USE_BLAS
     integer :: ilen
@@ -568,12 +568,13 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
 
     !$omp target teams distribute parallel do default(none) &
     !$omp private(l, n, wrk_tmp) &
-    !$omp shared(wrk, d,f,len,nmax)
-    do l = 1, len ! len about 50'000
-        wrk_tmp(l) = 0.0_wp
+    !$omp shared(wrk, d, f, len, nmax)
+    do l = 1, len
+        ! real(wp) :: wrk_tmp  ! Declare as a scalar, not an array
+        wrk_tmp = 0.0_wp
         !DIR$ UNROLL 64
-        do n = 1, nmax - 1 ! nmax=512, grid size?
-            wrk_tmp(l) = wrk_tmp(l) + d(n)*f(l, n)
+        do n = 1, nmax - 1
+            wrk_tmp = wrk_tmp + d(n) * f(l, n)
         end do
         wrk(l) = wrk_tmp
     end do
