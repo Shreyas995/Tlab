@@ -525,77 +525,53 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
 ! -------------------------------------------------------------------
 ! Forward sweep
 ! -------------------------------------------------------------------
-    dummy1 = b(1)
     
     !$omp target teams distribute parallel do default(none) &
     !$omp private(l) &
-    !$omp shared(f,dummy1,len)
+    !$omp shared(f,len,n,nmax,wrk,a,b,c,d,e)
     do l = 1, len
-        f(l, 1) = f(l, 1)*dummy1
-    end do
-    !$omp end target teams distribute parallel do
+        f(l, 1) = f(l, 1)*b(1)
 
-    do n = 2, nmax - 1
-        dummy1 = a(n)
-        dummy2 = b(n)
-
-        !$omp target teams distribute parallel do default(none) &
-        !$omp private(l) &
-        !$omp shared(f,n,dummy1,dummy2,len)
-        do l = 1, len
-            f(l, n) = f(l, n)*dummy2 + dummy1*f(l, n - 1)
+        do n = 2, nmax - 1
+            f(l, n) = f(l, n)*b(n) + a(n)*f(l, n - 1)
         end do
-        !$omp end target teams distribute parallel do
-    end do
-
-    !$omp target teams distribute parallel do default(none) &
-    !$omp private(l) &
-    !$omp shared(wrk,len)
-    do l = 1, len
+    
         wrk(l) = 0.0_wp
-    end do
-    !$omp end target teams distribute parallel do
-
-    !$omp target teams distribute parallel do collapse(2) default(none) &
-    !$omp private(l,n) reduction(+:wrk) &
-    !$omp shared(d, f, len, nmax)
-    do l = 1, len
+    
         do n = 1, nmax - 1
             wrk(l) = wrk(l) + d(n)*f(l, n)
         end do
-    end do
-    !$omp end target teams distribute parallel do
 
-    ! !$omp target teams distribute parallel do default(none) &
-    ! !$omp private(l, n, wrk_tmp) &
-    ! !$omp shared(wrk, d, f, len, nmax)
-    ! do l = 1, len
-    !     wrk_tmp = 0.0_wp
-    !     !DIR$ UNROLL 64
-    !     do n = 1, nmax - 1
-    !         wrk_tmp = wrk_tmp + d(n) * f(l, n)
-    !     end do
-    !     wrk(l) = wrk_tmp
-    ! end do
-    ! !$omp end target teams distribute parallel do
+        ! !$omp target teams distribute parallel do default(none) &
+        ! !$omp private(l, n, wrk_tmp) &
+        ! !$omp shared(wrk, d, f, len, nmax)
+        ! do l = 1, len
+        !     wrk_tmp = 0.0_wp
+        !     !DIR$ UNROLL 64
+        !     do n = 1, nmax - 1
+        !         wrk_tmp = wrk_tmp + d(n) * f(l, n)
+        !     end do
+        !     wrk(l) = wrk_tmp
+        ! end do
+        ! !$omp end target teams distribute parallel do
 
-    ! ############################################################
-    ! # Something goes wrong here
-    ! ############################################################
-    ! !$omp target teams distribute parallel do collapse(2) reduction(+:wrk) default(none) &
-    ! !$omp private(n,l) &
-    ! !$omp shared(nmax,d,f,len)
-    ! do n = 1, nmax - 1
-    !     do l = 1, len
-    !         wrk(l) = wrk(l) + d(n)*f(l, n)
-    !     end do
-    ! end do
-    ! !$omp end target teams distribute parallel do
+        ! ############################################################
+        ! # Something goes wrong here
+        ! ############################################################
+        ! !$omp target teams distribute parallel do collapse(2) reduction(+:wrk) default(none) &
+        ! !$omp private(n,l) &
+        ! !$omp shared(nmax,d,f,len)
+        ! do n = 1, nmax - 1
+        !     do l = 1, len
+        !         wrk(l) = wrk(l) + d(n)*f(l, n)
+        !     end do
+        ! end do
+        ! !$omp end target teams distribute parallel do
 
-    !$omp target teams distribute parallel do default(none) &
-    !$omp private(l) &
-    !$omp shared(f,nmax,wrk,dummy1,f,len,b,c,e)
-    do l = 1, len
+        ! !$omp target teams distribute parallel do default(none) &
+        ! !$omp private(l) &
+        ! !$omp shared(f,nmax,wrk,dummy1,f,len,b,c,e)
+
         f(l, nmax) = (f(l, nmax) - wrk(l))*b(nmax)
 
 ! -------------------------------------------------------------------
