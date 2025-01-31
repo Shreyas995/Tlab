@@ -606,37 +606,37 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
 ! -------------------------------------------------------------------
     dummy1 = e(nmax - 1)
 
-    ! !$omp target teams distribute parallel do default(none) &
-    ! !$omp private(l) &
-    ! !$omp shared(f,nmax,wrk,dummy1,f,len)
-    ! do l = 1, len
-    !     f(l, nmax - 1) = dummy1*f(l, nmax) + f(l, nmax - 1)
-    ! end do
-    ! !$omp end target teams distribute parallel do
-
-    ! do n = nmax - 2, 1, -1
-    !     dummy1 = c(n)
-    !     dummy2 = e(n)
-
-    !     !$omp target teams distribute parallel do default(none) &
-    !     !$omp private(l) &
-    !     !$omp shared(f,nmax,dummy1,dummy2,f,len,n)
-    !     do l = 1, len
-    !         f(l, n) = f(l, n) + dummy1*f(l, n + 1) + dummy2*f(l, nmax)
-    !     end do
-    !     !$omp end target teams distribute parallel do
-    ! end do
-
     !$omp target teams distribute parallel do default(none) &
-    !$omp private(l,n) &
-    !$omp shared(f,nmax,wrk,dummy1,f,len,c,e)
+    !$omp private(l) &
+    !$omp shared(f,nmax,wrk,dummy1,f,len)
     do l = 1, len
-        f(l, nmax - 1) = c(n)*f(l, nmax) + f(l, nmax - 1)
-        do n = nmax - 2, 1, -1
-            f(l, n) = f(l, n) + c(n)*f(l, n + 1) + e(n)*f(l, nmax)
-        end do
+        f(l, nmax - 1) = dummy1*f(l, nmax) + f(l, nmax - 1)
     end do
     !$omp end target teams distribute parallel do
+
+    do n = nmax - 2, 1, -1
+        dummy1 = c(n)
+        dummy2 = e(n)
+
+        !$omp target teams distribute parallel do default(none) &
+        !$omp private(l) &
+        !$omp shared(f,nmax,dummy1,dummy2,f,len,n)
+        do l = 1, len
+            f(l, n) = f(l, n) + dummy1*f(l, n + 1) + dummy2*f(l, nmax)
+        end do
+        !$omp end target teams distribute parallel do
+    end do
+
+    ! !$omp target teams distribute parallel do default(none) &
+    ! !$omp private(l,n) &
+    ! !$omp shared(f,nmax,wrk,dummy1,f,len,c,e)
+    ! do l = 1, len
+    !     f(l, nmax - 1) = c(n)*f(l, nmax) + f(l, nmax - 1)
+    !     do n = nmax - 2, 1, -1
+    !         f(l, n) = f(l, n) + c(n)*f(l, n + 1) + e(n)*f(l, nmax)
+    !     end do
+    ! end do
+    ! !$omp end target teams distribute parallel do
 
 #endif
 
