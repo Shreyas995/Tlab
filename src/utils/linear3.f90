@@ -556,10 +556,10 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
     end do
     !$omp end target teams distribute parallel do
 
-    !$omp target teams distribute parallel do collapse(2) default(none) &
-    !$omp private(l,n) &
-    !$omp shared(wrk,nmax,d,f,len)
     do n = 1, nmax - 1
+        !$omp target teams distribute parallel do collapse(2) default(none) &
+        !$omp private(l,n) &
+        !$omp shared(wrk,nmax,d,f,len)
         do l = 1, len
             wrk(l) = wrk(l) + d(n)*f(l, n)
         end do
