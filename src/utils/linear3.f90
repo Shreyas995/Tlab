@@ -405,7 +405,7 @@ subroutine TRIDPSS(nmax, len, a, b, c, d, e, f, wrk)
 
     integer clock_0, clock_1, clock_cycle
 
-    integer(longi) l, n
+    integer(longi) l, n, idx, idx_p
     real(wp)  wrk_tmp
 
 #ifdef USE_BLAS
@@ -559,7 +559,7 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
         ! -------------------------------------------------------------------
         ! Forward sweep
         ! -------------------------------------------------------------------
-        f(l, 1) = f(l, 1)*b(1)
+        f(l) = f(l) * b(1)
 
         wrk(l) = 0.0_wp
 
@@ -579,7 +579,7 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
         ! -------------------------------------------------------------------
         f((nmax - 2) * len + l) = e(nmax - 1) * f((nmax - 1) * len + l) + f((nmax - 2) * len + l)
         do n = nmax - 2, 1, -1
-            f(l, n) = f(l, n) + c(n) * f(l, n + 1) + e(n) * f(l, nmax)
+            f((n-1) * len + l) = f((n-1) * len + l) + c(n) * f(n * len + l) + e(n) * f((nmax - 1) * len + l)
         end do
     end do
     !$omp end target teams distribute parallel do
