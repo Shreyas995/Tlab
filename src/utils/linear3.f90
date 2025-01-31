@@ -552,9 +552,9 @@ call SYSTEM_CLOCK(clock_0,clock_cycle)
     ! end do
     ! !$omp end target teams distribute parallel do
 
-    !$omp target teams distribute parallel do default(none) &
-    !$omp private(l) &
-    !$omp shared(f,len,n,nmax,wrk,a,b,c,d,e,idx,idx_p)
+    !$omp target teams distribute parallel do collapse (2) default(none) &
+    !$omp private(l,n) &
+    !$omp shared(f,len,nmax,wrk,a,b,c,d,e,idx,idx_p)
     do l = 1, len
         ! -------------------------------------------------------------------
         ! Forward sweep
