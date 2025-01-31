@@ -753,8 +753,8 @@ contains
         !$omp target teams distribute parallel do collapse(2) default(none) &
         !$omp private(n,l) &
         !$omp shared(len,f,u,nx,r5_loc)
-        do n = 4, nx - 3
-            do l = 1, len
+        do l = 1, len
+            do n = 4, nx - 3
                 f(l, n) = u(l, n + 1) - u(l, n - 1) + r5_loc*(u(l, n + 2) - u(l, n - 2))
             end do
         end do
